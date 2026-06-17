@@ -24,6 +24,7 @@ const authSlice = createSlice({
       state.user = action.payload
       state.isLoggedIn = true
       localStorage.setItem('swc_user', JSON.stringify(action.payload))
+      localStorage.setItem('token', action.payload.token)
     },
     loginFail: (state, action) => {
       state.loading = false
@@ -33,6 +34,7 @@ const authSlice = createSlice({
       state.user = null
       state.isLoggedIn = false
       localStorage.removeItem('swc_user')
+      localStorage.removeItem('token')
     },
   },
 })
