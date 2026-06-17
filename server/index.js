@@ -7,7 +7,6 @@ import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { connectDB } from './config/db.js'
 import routes from './routes/index.js'
 import errorHandler from './middleware/error.middleware.js'
 import passport from './config/passport.js'
@@ -19,27 +18,28 @@ const app = express()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// DB connect (IMPORTANT)
-connectDB().catch(err => console.log("DB Error:", err))
-
 app.use(helmet())
 
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-}))
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+  })
+)
 
-app.use(cors({
-  origin: process.env.CLIENT_URL,
-  credentials: true
-}))
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  })
+)
 
 app.use(express.json())
 app.use(cookieParser())
 app.use(passport.initialize())
 
 if (process.env.NODE_ENV !== 'production') {
-  app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
   app.use(morgan('dev'))
 }
 
