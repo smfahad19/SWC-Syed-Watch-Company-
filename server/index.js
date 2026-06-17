@@ -45,6 +45,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.use('/api/v1', routes)
 
+
+
 app.use(errorHandler)
 
+app.get('/', (req, res) => {
+  res.json({ message: 'SWC API is running' })
+})
 export default app
