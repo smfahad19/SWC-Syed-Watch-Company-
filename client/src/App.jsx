@@ -23,6 +23,7 @@ import Carousel from './pages/admin/Carousel';
 import Users from './pages/admin/Users';
 import Analytics from './pages/admin/Analytics';
 import Reviews from './pages/admin/Reviews';
+import { loginSuccess } from './redux/slices/authSlice';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
