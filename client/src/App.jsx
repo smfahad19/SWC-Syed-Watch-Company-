@@ -30,15 +30,26 @@ import Footer from './components/Footer';
 
 const AuthSuccess = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
   useEffect(() => {
-    if (isLoggedIn) {
-      if (user?.role === 'SELLER') navigate('/admin/dashboard');
-      else navigate('/');
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (token) {
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      localStorage.setItem('token', token);
+      dispatch(loginSuccess({
+        id: decoded.id,
+        role: decoded.role,
+        token,
+      }));
+      navigate(decoded.role === 'SELLER' ? '/admin/dashboard' : '/');
     } else {
       navigate('/login');
     }
-  }, [isLoggedIn, user, navigate]);
+  }, []);
+
   return <div className='min-h-screen flex items-center justify-center'>Loading...</div>;
 };
 
