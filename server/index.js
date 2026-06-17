@@ -19,7 +19,8 @@ const app = express()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-connectDB()
+// DB connect (IMPORTANT)
+connectDB().catch(err => console.log("DB Error:", err))
 
 app.use(helmet())
 
@@ -37,9 +38,8 @@ app.use(express.json())
 app.use(cookieParser())
 app.use(passport.initialize())
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
-
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
   app.use(morgan('dev'))
 }
 
