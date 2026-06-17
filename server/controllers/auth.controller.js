@@ -7,7 +7,6 @@ export const signup = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json(new ApiResponse(400, 'Email already registered'));
@@ -19,12 +18,10 @@ export const signup = async (req, res, next) => {
         name,
         email,
         password: hashedPassword,
-        isVerified: true, // No OTP, directly verified
+        isVerified: true,
       },
     });
 
-    // Optionally auto-login after signup (optional)
-    // For now, just return success
     res.status(201).json(new ApiResponse(201, 'Account created successfully. Please login.', { email: user.email }));
   } catch (err) {
     next(err);
@@ -40,7 +37,6 @@ export const login = async (req, res, next) => {
       return res.status(400).json(new ApiResponse(400, 'Invalid credentials'));
     }
 
-    // No need to check isVerified because all users are verified
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json(new ApiResponse(400, 'Invalid credentials'));
@@ -54,8 +50,8 @@ export const login = async (req, res, next) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -74,7 +70,11 @@ export const login = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
     res.status(200).json(new ApiResponse(200, 'Logged out successfully'));
   } catch (err) {
     next(err);
