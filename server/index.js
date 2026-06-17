@@ -12,16 +12,27 @@ import routes from './routes/index.js'
 import errorHandler from './middleware/error.middleware.js'
 import passport from './config/passport.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
 dotenv.config()
 
 const app = express()
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+connectDB()
+
 app.use(helmet())
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }))
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }))
+
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+}))
+
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true
+}))
+
 app.use(express.json())
 app.use(cookieParser())
 app.use(passport.initialize())
@@ -33,12 +44,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/api/v1', routes)
+
 app.use(errorHandler)
 
-const PORT = process.env.PORT || 5000
-
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
-  })
-})
+export default app
