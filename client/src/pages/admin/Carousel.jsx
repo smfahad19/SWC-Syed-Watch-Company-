@@ -4,7 +4,7 @@ import api from '../../services/api';
 import { FiPlus, FiX, FiEdit2, FiTrash2, FiImage as FiImageIcon, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 
 // API base for local fallback only
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://swc-syed-watch-company-backend.vercel.app/api/v1';
 
 // ─── Helper: handles both Cloudinary absolute URLs and local relative paths ──
 const getImageUrl = (image) => {

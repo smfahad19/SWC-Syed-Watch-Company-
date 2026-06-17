@@ -43,7 +43,7 @@ const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+        const base = import.meta.env.VITE_API_URL || 'https://swc-syed-watch-company-backend.vercel.app/api/v1';
         const es = new EventSource(`${base}/admin/notifications/stream`, { withCredentials: true });
 
         es.addEventListener('new-order', (e) => {
