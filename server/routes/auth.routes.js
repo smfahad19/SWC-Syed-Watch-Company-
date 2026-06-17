@@ -1,11 +1,15 @@
-import express from 'express'
-import { signup, verifyOtp, login, logout } from '../controllers/auth.controller.js'
-import { googleLogin } from '../controllers/googleAuthController.js';   // import
+import express from 'express';
+import jwt from 'jsonwebtoken';
 import passport from 'passport';
+import { signup, login, logout } from '../controllers/auth.controller.js';
+import { googleLogin } from '../controllers/googleAuthController.js';
 
+const router = express.Router();
 
-const router = express.Router()
-
+router.post('/signup', signup);
+router.post('/login', login);
+router.post('/logout', logout);
+router.post('/google', googleLogin);
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/login' }), (req, res) => {
@@ -14,12 +18,4 @@ router.get('/google/callback', passport.authenticate('google', { session: false,
   res.redirect('http://localhost:5173/auth-success');
 });
 
-router.post('/signup', signup)
-router.post('/verify-otp', verifyOtp)
-router.post('/login', login)
-router.post('/logout', logout)
-
-router.post('/google', googleLogin);
-
-
-export default router
+export default router;

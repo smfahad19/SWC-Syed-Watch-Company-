@@ -21,7 +21,7 @@ model User {
   updatedAt  DateTime @updatedAt
   orders     Order[]
   cartItems  Cart[]
-  reviews    Review[]     // ✅ ye line add ki
+  reviews    Review[]    
 }
 
 enum Role {
@@ -64,7 +64,7 @@ model Product {
   updatedAt     DateTime    @updatedAt
   orderItems    OrderItem[]
   cartItems     Cart[]
-  reviews       Review[]     // ✅ ye line add ki
+  reviews       Review[]    
 }
 
 model Cart {
@@ -74,8 +74,9 @@ model Cart {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   quantity  Int     @default(1)
+  variant   Json?   // store selected variant: { color, design, image }
 
-  @@unique([userId, productId])
+  @@unique([userId, productId, variant])   // allow same product with different variants
 }
 
 model Order {
@@ -108,14 +109,17 @@ enum OrderStatus {
   CANCELLED
 }
 
+
+
 model OrderItem {
   id        Int     @id @default(autoincrement())
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   Int
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   quantity  Int
   price     Float
+  variant   Json?   // store the variant selected at order time
 }
 
 model Review {

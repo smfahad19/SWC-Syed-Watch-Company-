@@ -106,7 +106,7 @@ const Profile = () => {
           {orders.map((order) => (
             <Link
               key={order.id}
-              to={`/orders/${order.id}`}
+              to={`/profile/orders/${order.id}`}   // ✅ FIXED: now includes /profile/
               className='border border-gray-200 p-5 flex items-center justify-between hover:border-black transition group'
             >
               <div>

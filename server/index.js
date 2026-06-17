@@ -5,10 +5,15 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { connectDB } from './config/db.js'
 import routes from './routes/index.js'
 import errorHandler from './middleware/error.middleware.js'
-import passport from './config/passport.js';
+import passport from './config/passport.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 dotenv.config()
 
@@ -19,7 +24,10 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }))
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }))
 app.use(express.json())
 app.use(cookieParser())
-app.use(passport.initialize());
+app.use(passport.initialize())
+
+// ✅ Serve uploaded files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'))

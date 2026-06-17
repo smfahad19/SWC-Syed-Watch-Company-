@@ -2,6 +2,7 @@ import prisma from '../config/db.js'
 import asyncHandler from 'express-async-handler'
 import ApiResponse from '../utils/ApiResponse.js'
 import sendEmail from '../utils/sendEmail.js'
+import notificationEmitter from '../utils/notificationEmitter.js'
 
 export const getProfile = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({
@@ -22,40 +23,59 @@ export const updateProfile = asyncHandler(async (req, res) => {
 })
 
 export const addToCart = asyncHandler(async (req, res) => {
-  const { productId, quantity } = req.body
+  const { productId, quantity = 1, variant } = req.body
+  const userId = Number(req.user.id)
 
-  const product = await prisma.product.findUnique({ where: { id: productId } })
+  const product = await prisma.product.findUnique({ where: { id: Number(productId) } })
   if (!product || !product.isActive) {
     res.status(404)
-    throw new Error('Product nahi mila')
+    throw new Error('Product not found')
   }
 
   if (product.stock < quantity) {
     res.status(400)
-    throw new Error('Itna stock available nahi hai')
+    throw new Error(`Only ${product.stock} items in stock`)
   }
 
+  // Try to find existing cart item with same product and variant
   const existing = await prisma.cart.findUnique({
-    where: { userId_productId: { userId: req.user.id, productId } }
+    where: {
+      userId_productId_variant: {
+        userId,
+        productId: Number(productId),
+        variant: variant || null
+      }
+    }
   })
 
   if (existing) {
     const updated = await prisma.cart.update({
-      where: { userId_productId: { userId: req.user.id, productId } },
+      where: {
+        userId_productId_variant: {
+          userId,
+          productId: Number(productId),
+          variant: variant || null
+        }
+      },
       data: { quantity: existing.quantity + quantity }
     })
     return res.json(new ApiResponse(200, 'Cart updated', updated))
   }
 
   const cartItem = await prisma.cart.create({
-    data: { userId: req.user.id, productId, quantity }
+    data: {
+      userId,
+      productId: Number(productId),
+      quantity,
+      variant: variant || null
+    }
   })
   res.status(201).json(new ApiResponse(201, 'Added to cart', cartItem))
 })
 
 export const getCart = asyncHandler(async (req, res) => {
   const cart = await prisma.cart.findMany({
-    where: { userId: req.user.id },
+    where: { userId: Number(req.user.id) },
     include: {
       product: {
         select: { id: true, name: true, price: true, discountPrice: true, images: true, stock: true }
@@ -68,13 +88,13 @@ export const getCart = asyncHandler(async (req, res) => {
 export const removeFromCart = asyncHandler(async (req, res) => {
   const { productId } = req.params
   await prisma.cart.deleteMany({
-    where: { userId: req.user.id, productId: parseInt(productId) }
+    where: { userId: Number(req.user.id), productId: Number(productId) }
   })
   res.json(new ApiResponse(200, 'Removed from cart'))
 })
 
 export const clearCart = asyncHandler(async (req, res) => {
-  await prisma.cart.deleteMany({ where: { userId: req.user.id } })
+  await prisma.cart.deleteMany({ where: { userId: Number(req.user.id) } })
   res.json(new ApiResponse(200, 'Cart cleared'))
 })
 
@@ -83,23 +103,23 @@ export const placeOrder = asyncHandler(async (req, res) => {
 
   if (!fullName || !phone || !address || !city || !postalCode || !province) {
     res.status(400)
-    throw new Error('Sab zaroori fields fill karo')
+    throw new Error('All required fields must be filled')
   }
 
   const cartItems = await prisma.cart.findMany({
-    where: { userId: req.user.id },
+    where: { userId: Number(req.user.id) },
     include: { product: true }
   })
 
   if (cartItems.length === 0) {
     res.status(400)
-    throw new Error('Cart empty hai')
+    throw new Error('Cart is empty')
   }
 
   for (const item of cartItems) {
     if (item.product.stock < item.quantity) {
       res.status(400)
-      throw new Error(`${item.product.name} ka stock kam hai`)
+      throw new Error(`${item.product.name} has insufficient stock`)
     }
   }
 
@@ -110,7 +130,7 @@ export const placeOrder = asyncHandler(async (req, res) => {
 
   const order = await prisma.order.create({
     data: {
-      userId: req.user.id,
+      userId: Number(req.user.id),
       totalPrice,
       fullName,
       phone,
@@ -125,13 +145,15 @@ export const placeOrder = asyncHandler(async (req, res) => {
         create: cartItems.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: item.product.discountPrice || item.product.price
+          price: item.product.discountPrice || item.product.price,
+          variant: item.variant   // 👈 store variant from cart
         }))
       }
     },
     include: { items: true }
   })
 
+  // Update stock
   for (const item of cartItems) {
     await prisma.product.update({
       where: { id: item.productId },
@@ -139,9 +161,19 @@ export const placeOrder = asyncHandler(async (req, res) => {
     })
   }
 
-  await prisma.cart.deleteMany({ where: { userId: req.user.id } })
+  // Clear cart
+  await prisma.cart.deleteMany({ where: { userId: Number(req.user.id) } })
 
-  const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+  // Send notification to admin
+  notificationEmitter.emit('new-order', {
+    id: order.id,
+    totalPrice: order.totalPrice,
+    fullName,
+    createdAt: order.createdAt,
+  })
+
+  // Send email to user
+  const user = await prisma.user.findUnique({ where: { id: Number(req.user.id) } })
   await sendEmail({
     to: user.email,
     subject: 'Order Confirmed — Syed & Sons',
@@ -163,13 +195,11 @@ export const placeOrder = asyncHandler(async (req, res) => {
 
 export const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany({
-    where: { userId: req.user.id },
+    where: { userId: Number(req.user.id) },
     orderBy: { createdAt: 'desc' },
     include: {
       items: {
-        include: {
-          product: { select: { id: true, name: true, images: true } }
-        }
+        include: { product: { select: { id: true, name: true, images: true } } }
       }
     }
   })
@@ -178,49 +208,28 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 
 export const getOrderById = asyncHandler(async (req, res) => {
   const order = await prisma.order.findFirst({
-    where: { id: parseInt(req.params.id), userId: req.user.id },
+    where: { id: Number(req.params.id), userId: Number(req.user.id) },
     include: {
       items: {
-        include: {
-          product: { select: { id: true, name: true, images: true } }
-        }
+        include: { product: { select: { id: true, name: true, images: true } } }
       }
     }
   })
-
-  if (!order) {
-    res.status(404)
-    throw new Error('Order nahi mila')
-  }
-
+  if (!order) { res.status(404); throw new Error('Order not found') }
   res.json(new ApiResponse(200, 'Order fetched', order))
 })
 
 export const cancelOrder = asyncHandler(async (req, res) => {
   const order = await prisma.order.findFirst({
-    where: { id: parseInt(req.params.id), userId: req.user.id }
+    where: { id: Number(req.params.id), userId: Number(req.user.id) }
   })
-
-  if (!order) {
-    res.status(404)
-    throw new Error('Order nahi mila')
-  }
-
-  if (order.status !== 'PENDING') {
-    res.status(400)
-    throw new Error('Sirf PENDING orders cancel ho sakte hain')
-  }
+  if (!order) { res.status(404); throw new Error('Order not found') }
+  if (order.status !== 'PENDING') { res.status(400); throw new Error('Only PENDING orders can be cancelled') }
 
   const hoursPassed = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60)
-  if (hoursPassed > 6) {
-    res.status(400)
-    throw new Error('6 ghante guzar gaye, ab cancel nahi ho sakta')
-  }
+  if (hoursPassed > 6) { res.status(400); throw new Error('Cancellation window of 6 hours has passed') }
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { status: 'CANCELLED' }
-  })
+  await prisma.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } })
 
   const items = await prisma.orderItem.findMany({ where: { orderId: order.id } })
   for (const item of items) {
@@ -229,55 +238,40 @@ export const cancelOrder = asyncHandler(async (req, res) => {
       data: { stock: { increment: item.quantity } }
     })
   }
-
   res.json(new ApiResponse(200, 'Order cancelled'))
 })
 
 export const getProducts = asyncHandler(async (req, res) => {
   const { categoryId, sort } = req.query
-
   let orderBy = { createdAt: 'desc' }
   if (sort === 'price_asc') orderBy = { price: 'asc' }
   if (sort === 'price_desc') orderBy = { price: 'desc' }
 
   const products = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      ...(categoryId && { categoryId: parseInt(categoryId) })
-    },
+    where: { isActive: true, ...(categoryId && { categoryId: Number(categoryId) }) },
     orderBy,
-    include: {
-      category: { select: { id: true, name: true } }
-    }
+    include: { category: { select: { id: true, name: true } } }
   })
-
   res.json(new ApiResponse(200, 'Products fetched', products))
 })
 
 export const getProductById = asyncHandler(async (req, res) => {
   const product = await prisma.product.findUnique({
-    where: { id: parseInt(req.params.id) },
+    where: { id: Number(req.params.id) },
     include: {
       category: { select: { id: true, name: true } },
-      reviews: {               // ✅ Reviews include kar diye
+      reviews: {
         include: { user: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' }
       }
     }
   })
-
-  if (!product || !product.isActive) {
-    res.status(404)
-    throw new Error('Product nahi mila')
-  }
-
+  if (!product || !product.isActive) { res.status(404); throw new Error('Product not found') }
   res.json(new ApiResponse(200, 'Product fetched', product))
 })
 
 export const getCategories = asyncHandler(async (req, res) => {
-  const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' }
-  })
+  const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } })
   res.json(new ApiResponse(200, 'Categories fetched', categories))
 })
 
@@ -289,41 +283,26 @@ export const getCarouselSlides = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, 'Slides fetched', slides))
 })
 
-// ============ REVIEWS FUNCTIONS (New) ============
-
-// Add a review (logged in user only)
 export const addReview = asyncHandler(async (req, res) => {
-  const { id } = req.params // productId
+  const { id } = req.params
   const { rating, comment } = req.body
-  const userId = req.user.id
+  const userId = Number(req.user.id)
 
-  // Check if user already reviewed this product
   const existing = await prisma.review.findUnique({
-    where: { productId_userId: { productId: parseInt(id), userId } }
+    where: { productId_userId: { productId: Number(id), userId } }
   })
-  if (existing) {
-    res.status(400)
-    throw new Error('You have already reviewed this product')
-  }
+  if (existing) { res.status(400); throw new Error('Already reviewed this product') }
 
   const review = await prisma.review.create({
-    data: {
-      rating: parseInt(rating),
-      comment,
-      productId: parseInt(id),
-      userId
-    },
+    data: { rating: Number(rating), comment, productId: Number(id), userId },
     include: { user: { select: { id: true, name: true } } }
   })
-
   res.status(201).json(new ApiResponse(201, 'Review added', review))
 })
 
-// Get all reviews for a product (public)
 export const getProductReviews = asyncHandler(async (req, res) => {
-  const { id } = req.params
   const reviews = await prisma.review.findMany({
-    where: { productId: parseInt(id) },
+    where: { productId: Number(req.params.id) },
     include: { user: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'desc' }
   })

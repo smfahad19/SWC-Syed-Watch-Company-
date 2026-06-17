@@ -9,22 +9,28 @@ const Cart = () => {
   const navigate = useNavigate()
   const { items, totalPrice } = useSelector((state) => state.cart)
 
-  const handleRemove = async (id) => {
+  const handleRemove = async (productId, variant) => {
     try {
-      await api.delete(`/buyer/cart/${id}`)
-      dispatch(removeFromCart(id))
-      toast.success('Item removed')
+      // Send variant as query param (JSON string) for backend to delete specific variant
+      const variantQuery = variant ? `?variant=${encodeURIComponent(JSON.stringify(variant))}` : ''
+      await api.delete(`/buyer/cart/${productId}${variantQuery}`)
+      dispatch(removeFromCart(productId))  // we may need to match variant; for now remove all of same productId
+      // Better to dispatch with variant, but simple fix: refetch cart after remove.
+      // Instead, we'll refetch cart via parent or reload.
+      window.location.reload()
     } catch {
       toast.error('Remove nahi hua')
     }
   }
 
-  const handleQuantity = async (id, quantity) => {
-    if (quantity < 1) return
+  const handleQuantity = async (productId, variant, newQuantity) => {
+    if (newQuantity < 1) return
     try {
-      await api.delete(`/buyer/cart/${id}`)
-      await api.post('/buyer/cart', { productId: id, quantity })
-      dispatch(updateQuantity({ id, quantity }))
+      // First delete the old cart item (with variant), then add new quantity.
+      const variantQuery = variant ? `?variant=${encodeURIComponent(JSON.stringify(variant))}` : ''
+      await api.delete(`/buyer/cart/${productId}${variantQuery}`)
+      await api.post('/buyer/cart', { productId, quantity: newQuantity, variant })
+      dispatch(updateQuantity({ id: productId, quantity: newQuantity, variant }))
     } catch {
       toast.error('Update nahi hua')
     }
@@ -62,52 +68,62 @@ const Cart = () => {
       </div>
 
       <div className='flex flex-col divide-y divide-gray-100'>
-        {items.map((item) => (
-          <div key={item.id} className='flex items-center gap-5 py-5'>
-            <div className='w-20 h-20 bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0'>
-              {item.images?.[0] ? (
-                <img src={item.images[0]} alt={item.name} className='w-full h-full object-cover' />
-              ) : (
-                <span className='text-gray-300 text-xs'>No img</span>
-              )}
-            </div>
+        {items.map((item) => {
+          // Use variant image if exists, else product first image
+          const displayImage = item.variant?.image || item.images?.[0]
+          const variantName = item.variant?.color || item.variant?.design || 'Default'
+          return (
+            <div key={`${item.id}-${JSON.stringify(item.variant)}`} className='flex items-center gap-5 py-5'>
+              <div className='w-20 h-20 bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0'>
+                {displayImage ? (
+                  <img src={displayImage} alt={item.name} className='w-full h-full object-cover' />
+                ) : (
+                  <span className='text-gray-300 text-xs'>No img</span>
+                )}
+              </div>
 
-            <div className='flex-1 min-w-0'>
-              <h3 className='text-sm font-semibold truncate'>{item.name}</h3>
-              <p className='text-xs text-gray-400 mt-1'>
-                Rs. {(item.discountPrice || item.price).toLocaleString()} each
+              <div className='flex-1 min-w-0'>
+                <h3 className='text-sm font-semibold truncate'>{item.name}</h3>
+                {item.variant && (
+                  <p className='text-xs text-gray-500 mt-0.5'>
+                    {variantName}
+                  </p>
+                )}
+                <p className='text-xs text-gray-400 mt-1'>
+                  Rs. {(item.discountPrice || item.price).toLocaleString()} each
+                </p>
+              </div>
+
+              <div className='flex items-center gap-2'>
+                <button
+                  onClick={() => handleQuantity(item.id, item.variant, item.quantity - 1)}
+                  className='w-8 h-8 border border-gray-300 text-sm hover:border-black transition flex items-center justify-center'
+                >
+                  −
+                </button>
+                <span className='text-sm w-6 text-center font-medium'>{item.quantity}</span>
+                <button
+                  onClick={() => handleQuantity(item.id, item.variant, item.quantity + 1)}
+                  className='w-8 h-8 border border-gray-300 text-sm hover:border-black transition flex items-center justify-center'
+                >
+                  +
+                </button>
+              </div>
+
+              <p className='text-sm font-bold w-28 text-right'>
+                Rs. {((item.discountPrice || item.price) * item.quantity).toLocaleString()}
               </p>
-            </div>
 
-            <div className='flex items-center gap-2'>
               <button
-                onClick={() => handleQuantity(item.id, item.quantity - 1)}
-                className='w-8 h-8 border border-gray-300 text-sm hover:border-black transition flex items-center justify-center'
+                onClick={() => handleRemove(item.id, item.variant)}
+                className='text-gray-300 hover:text-red-500 transition ml-2'
+                title='Remove'
               >
-                −
-              </button>
-              <span className='text-sm w-6 text-center font-medium'>{item.quantity}</span>
-              <button
-                onClick={() => handleQuantity(item.id, item.quantity + 1)}
-                className='w-8 h-8 border border-gray-300 text-sm hover:border-black transition flex items-center justify-center'
-              >
-                +
+                ✕
               </button>
             </div>
-
-            <p className='text-sm font-bold w-28 text-right'>
-              Rs. {((item.discountPrice || item.price) * item.quantity).toLocaleString()}
-            </p>
-
-            <button
-              onClick={() => handleRemove(item.id)}
-              className='text-gray-300 hover:text-red-500 transition ml-2'
-              title='Remove'
-            >
-              ✕
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className='mt-10 flex flex-col items-end gap-5'>

@@ -224,22 +224,31 @@ const Checkout = () => {
           <h2 className='text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5'>Order Summary</h2>
           <div className='border border-gray-100 p-6'>
             <div className='flex flex-col gap-4 mb-6'>
-              {items.map((item) => (
-                <div key={item.id} className='flex items-center gap-3'>
-                  <div className='w-12 h-12 bg-gray-100 flex-shrink-0 overflow-hidden'>
-                    {item.images?.[0] ? (
-                      <img src={item.images[0]} alt={item.name} className='w-full h-full object-cover' />
-                    ) : null}
+              {items.map((item) => {
+                // Check for variant image
+                const variantImage = item.variant?.image || null;
+                const imageUrl = variantImage || item.images?.[0] || null;
+                const variantLabel = item.variant?.color || null;
+                return (
+                  <div key={item.id} className='flex items-center gap-3'>
+                    <div className='w-12 h-12 bg-gray-100 flex-shrink-0 overflow-hidden'>
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={item.name} className='w-full h-full object-cover' />
+                      ) : null}
+                    </div>
+                    <div className='flex-1 min-w-0'>
+                      <p className='text-xs font-medium truncate'>{item.name}</p>
+                      {variantLabel && (
+                        <p className='text-[10px] text-gray-400'>Variant: {variantLabel}</p>
+                      )}
+                      <p className='text-xs text-gray-400'>Qty: {item.quantity}</p>
+                    </div>
+                    <span className='text-xs font-semibold'>
+                      Rs. {((item.discountPrice || item.price) * item.quantity).toLocaleString()}
+                    </span>
                   </div>
-                  <div className='flex-1 min-w-0'>
-                    <p className='text-xs font-medium truncate'>{item.name}</p>
-                    <p className='text-xs text-gray-400'>Qty: {item.quantity}</p>
-                  </div>
-                  <span className='text-xs font-semibold'>
-                    Rs. {((item.discountPrice || item.price) * item.quantity).toLocaleString()}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className='border-t border-gray-100 pt-4 flex flex-col gap-2'>
