@@ -9,33 +9,6 @@ import { getActiveUsersCount } from '../utils/activeUsers.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// ─── CAROUSEL LOCAL STORAGE SETUP ───────────────────────
-const CAROUSEL_UPLOAD_DIR = path.join(__dirname, '../uploads/carousel')
-if (!fs.existsSync(CAROUSEL_UPLOAD_DIR)) {
-  fs.mkdirSync(CAROUSEL_UPLOAD_DIR, { recursive: true })
-  console.log('📁 Created carousel upload directory:', CAROUSEL_UPLOAD_DIR)
-}
-
-const saveCarouselImage = (file) => {
-  console.log('💾 Saving carousel image:', file.originalname, 'size:', file.size)
-  const uniqueName = `${Date.now()}-${file.originalname}`
-  const filePath = path.join(CAROUSEL_UPLOAD_DIR, uniqueName)
-  fs.writeFileSync(filePath, file.buffer)
-  const url = `/uploads/carousel/${uniqueName}`
-  console.log('✅ Image saved at:', url)
-  return url
-}
-
-const deleteCarouselImage = (imageUrl) => {
-  if (!imageUrl) return
-  const filename = path.basename(imageUrl)
-  const filePath = path.join(CAROUSEL_UPLOAD_DIR, filename)
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath)
-    console.log('🗑️ Deleted image:', filePath)
-  }
-}
-
 // ─── DASHBOARD ────────────────────────────────────────────
 export const getDashboardStats = async (req, res, next) => {
   try {
@@ -310,14 +283,14 @@ export const getAllSlides = async (req, res, next) => {
     res.status(200).json(new ApiResponse(200, 'Slides fetched', slides))
   } catch (err) { next(err) }
 }
+
 export const createSlide = async (req, res, next) => {
   try {
-    const { title, subtitle, desc, bgColor, link, order, isActive } = req.body;
+    const { title, subtitle, desc, bgColor, link, order, isActive } = req.body
 
-    let image = null;
+    let image = null
     if (req.file) {
-      // Upload to Cloudinary (you can specify a folder, e.g., 'carousel')
-      image = await uploadToCloudinary(req.file.buffer, 'carousel');
+      image = await uploadToCloudinary(req.file.buffer, 'carousel')
     }
 
     const slide = await prisma.carouselSlide.create({
@@ -325,46 +298,37 @@ export const createSlide = async (req, res, next) => {
         title,
         subtitle,
         desc,
-        image, // stores the Cloudinary URL
+        image,
         bgColor: bgColor || '#18181b',
         link,
         order: Number(order || 0),
         isActive: isActive !== undefined ? Boolean(isActive) : true,
       },
-    });
+    })
 
-    console.log('✅ Slide created:', slide.id);
-    res.status(201).json(new ApiResponse(201, 'Slide created', slide));
+    res.status(201).json(new ApiResponse(201, 'Slide created', slide))
   } catch (err) {
-    console.error('❌ Create slide error:', err);
-    next(err);
+    console.error('Create slide error:', err)
+    next(err)
   }
-};
+}
 
 export const updateSlide = async (req, res, next) => {
   try {
-    console.log('📥 Update slide request body:', req.body);
-    console.log('📎 File:', req.file ? req.file.originalname : 'No file');
-
     const existingSlide = await prisma.carouselSlide.findUnique({
       where: { id: Number(req.params.id) },
-    });
+    })
     if (!existingSlide) {
-      return res.status(404).json(new ApiResponse(404, 'Slide not found'));
+      return res.status(404).json(new ApiResponse(404, 'Slide not found'))
     }
 
-    let image = existingSlide.image; // keep old by default
+    let image = existingSlide.image
 
     if (req.file) {
-      // Delete old image from Cloudinary if it exists
-      if (existingSlide.image) {
-        await deleteCloudinaryImage(existingSlide.image);
-      }
-      // Upload new image
-      image = await uploadToCloudinary(req.file.buffer, 'carousel');
+      image = await uploadToCloudinary(req.file.buffer, 'carousel')
     }
 
-    const { title, subtitle, desc, bgColor, link, order, isActive } = req.body;
+    const { title, subtitle, desc, bgColor, link, order, isActive } = req.body
 
     const slide = await prisma.carouselSlide.update({
       where: { id: Number(req.params.id) },
@@ -378,29 +342,21 @@ export const updateSlide = async (req, res, next) => {
         ...(order !== undefined && { order: Number(order) }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
       },
-    });
+    })
 
-    console.log('✅ Slide updated:', slide.id);
-    res.status(200).json(new ApiResponse(200, 'Slide updated', slide));
+    res.status(200).json(new ApiResponse(200, 'Slide updated', slide))
   } catch (err) {
-    console.error('❌ Update slide error:', err);
-    next(err);
+    console.error('Update slide error:', err)
+    next(err)
   }
-};
+}
 
 export const deleteSlide = async (req, res, next) => {
   try {
-    const slide = await prisma.carouselSlide.findUnique({
-      where: { id: Number(req.params.id) },
-    })
-    if (slide && slide.image) {
-      deleteCarouselImage(slide.image)
-    }
     await prisma.carouselSlide.delete({ where: { id: Number(req.params.id) } })
-    console.log('🗑️ Slide deleted:', req.params.id)
     res.status(200).json(new ApiResponse(200, 'Slide deleted'))
   } catch (err) {
-    console.error('❌ Delete slide error:', err)
+    console.error('Delete slide error:', err)
     next(err)
   }
 }
