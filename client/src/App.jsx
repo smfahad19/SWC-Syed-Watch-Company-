@@ -12,7 +12,7 @@ import ProductDetail from './pages/buyer/ProductDetail';
 import Cart from './pages/buyer/Cart';
 import Checkout from './pages/buyer/Checkout';
 import Profile from './pages/buyer/Profile';
-import OrderDetail from './pages/buyer/OrderDetail';
+import OrderDetail from './pages/buyer/OrderDetail';   // ✅ imported
 
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -20,9 +20,9 @@ import Products from './pages/admin/Products';
 import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
 import Carousel from './pages/admin/Carousel';
-import Reviews from './pages/admin/Reviews';   // ✅ ADDED
 import Users from './pages/admin/Users';
 import Analytics from './pages/admin/Analytics';
+import Reviews from './pages/admin/Reviews';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -56,8 +56,10 @@ const BuyerLayout = ({ isLoggedIn }) => (
         <Route path='/cart' element={<Cart />} />
         <Route path='/checkout' element={<Checkout />} />
         <Route path='/profile' element={<Profile />} />
+        {/* 👇 CRITICAL: order detail route - exact match */}
         <Route path='/profile/orders/:id' element={<OrderDetail />} />
       </Route>
+      {/* catch-all - must be LAST */}
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>
     <Footer />
@@ -73,9 +75,9 @@ const AdminRoutes = () => (
       <Route path='categories' element={<Categories />} />
       <Route path='orders' element={<Orders />} />
       <Route path='carousel' element={<Carousel />} />
-      <Route path='reviews' element={<Reviews />} />          {/* ✅ ADDED */}
       <Route path='users' element={<Users />} />
       <Route path='analytics' element={<Analytics />} />
+      <Route path='reviews' element={<Reviews />} />
     </Route>
     <Route path='*' element={<Navigate to='/admin/dashboard' replace />} />
   </Routes>
