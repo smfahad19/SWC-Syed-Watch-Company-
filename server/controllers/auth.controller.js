@@ -28,6 +28,32 @@ export const signup = async (req, res, next) => {
   }
 };
 
+export const googleSignupComplete = async (req, res, next) => {
+  try {
+    const { email, name, password } = req.body;
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json(new ApiResponse(400, 'Email already registered'));
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        isVerified: true,
+      },
+    });
+
+    res.status(201).json(new ApiResponse(201, 'Account created successfully. Please login.', { email: user.email }));
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
