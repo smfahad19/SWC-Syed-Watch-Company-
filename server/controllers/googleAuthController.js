@@ -13,15 +13,13 @@ export const googleLogin = async (req, res, next) => {
       return res.status(400).json(new ApiResponse(400, 'Missing credential'));
     }
 
-    // Verify the Google token
     const ticket = await client.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-    const { email, name, picture } = payload;
+    const { email, name } = payload;
 
-    // Find or create user
     let user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       user = await prisma.user.create({
@@ -39,14 +37,12 @@ export const googleLogin = async (req, res, next) => {
       });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -54,12 +50,14 @@ export const googleLogin = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // ✅ token response me bhi bhejo
     res.status(200).json(
       new ApiResponse(200, 'Google login successful', {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        token,
       })
     );
   } catch (err) {
