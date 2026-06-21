@@ -37,13 +37,11 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new Error(`Only ${product.stock} items in stock`)
   }
 
-  // Try to find existing cart item with same product and variant
   const existing = await prisma.cart.findUnique({
     where: {
-      userId_productId_variant: {
+      userId_productId: {
         userId,
         productId: Number(productId),
-        variant: variant || null
       }
     }
   })
@@ -51,13 +49,15 @@ export const addToCart = asyncHandler(async (req, res) => {
   if (existing) {
     const updated = await prisma.cart.update({
       where: {
-        userId_productId_variant: {
+        userId_productId: {
           userId,
           productId: Number(productId),
-          variant: variant || null
         }
       },
-      data: { quantity: existing.quantity + quantity }
+      data: { 
+        quantity: existing.quantity + quantity,
+        variant: variant || null
+      }
     })
     return res.json(new ApiResponse(200, 'Cart updated', updated))
   }

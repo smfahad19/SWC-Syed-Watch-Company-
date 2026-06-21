@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -21,7 +23,7 @@ model User {
   updatedAt  DateTime @updatedAt
   orders     Order[]
   cartItems  Cart[]
-  reviews    Review[]    
+  reviews    Review[]
 }
 
 enum Role {
@@ -64,7 +66,7 @@ model Product {
   updatedAt     DateTime    @updatedAt
   orderItems    OrderItem[]
   cartItems     Cart[]
-  reviews       Review[]    
+  reviews       Review[]
 }
 
 model Cart {
@@ -74,9 +76,9 @@ model Cart {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   quantity  Int     @default(1)
-  variant   Json?   // store selected variant: { color, design, image }
+  variant   Json?
 
-  @@unique([userId, productId, variant])   // allow same product with different variants
+  @@unique([userId, productId])
 }
 
 model Order {
@@ -109,8 +111,6 @@ enum OrderStatus {
   CANCELLED
 }
 
-
-
 model OrderItem {
   id        Int     @id @default(autoincrement())
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -119,7 +119,7 @@ model OrderItem {
   productId Int
   quantity  Int
   price     Float
-  variant   Json?   // store the variant selected at order time
+  variant   Json?
 }
 
 model Review {

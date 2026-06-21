@@ -12,7 +12,7 @@ import ProductDetail from './pages/buyer/ProductDetail';
 import Cart from './pages/buyer/Cart';
 import Checkout from './pages/buyer/Checkout';
 import Profile from './pages/buyer/Profile';
-import OrderDetail from './pages/buyer/OrderDetail';   // ✅ imported
+import OrderDetail from './pages/buyer/OrderDetail';
 
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -68,10 +68,8 @@ const BuyerLayout = ({ isLoggedIn }) => (
         <Route path='/cart' element={<Cart />} />
         <Route path='/checkout' element={<Checkout />} />
         <Route path='/profile' element={<Profile />} />
-        {/* 👇 CRITICAL: order detail route - exact match */}
         <Route path='/profile/orders/:id' element={<OrderDetail />} />
       </Route>
-      {/* catch-all - must be LAST */}
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>
     <Footer />
@@ -80,8 +78,8 @@ const BuyerLayout = ({ isLoggedIn }) => (
 
 const AdminRoutes = () => (
   <Routes>
-    <Route path='/admin' element={<AdminLayout />}>
-      <Route index element={<Navigate to='/admin/dashboard' replace />} />
+    <Route path='/' element={<AdminLayout />}>
+      <Route index element={<Navigate to='dashboard' replace />} />
       <Route path='dashboard' element={<Dashboard />} />
       <Route path='products' element={<Products />} />
       <Route path='categories' element={<Categories />} />
@@ -91,7 +89,7 @@ const AdminRoutes = () => (
       <Route path='analytics' element={<Analytics />} />
       <Route path='reviews' element={<Reviews />} />
     </Route>
-    <Route path='*' element={<Navigate to='/admin/dashboard' replace />} />
+    <Route path='*' element={<Navigate to='/' replace />} />
   </Routes>
 );
 
@@ -108,13 +106,21 @@ const App = () => {
       try {
         const res = await api.get('/buyer/cart');
         dispatch(setCart(res.data.data));
-      } catch {}
+      } catch {
+        console.log("error occured");
+        
+      }
     };
     syncCart();
   }, [isLoggedIn, dispatch]);
 
   if (isLoggedIn && user?.role === 'SELLER') {
-    return <AdminRoutes />;
+    return (
+      <Routes>
+        <Route path='/admin/*' element={<AdminRoutes />} />
+        <Route path='*' element={<Navigate to='/admin/dashboard' replace />} />
+      </Routes>
+    );
   }
 
   return (
