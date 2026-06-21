@@ -1,13 +1,7 @@
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import prisma from '../config/db.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import uploadToCloudinary from '../utils/uploadToCloudinary.js'
 import { getActiveUsersCount } from '../utils/activeUsers.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 // ─── DASHBOARD ────────────────────────────────────────────
 export const getDashboardStats = async (req, res, next) => {
@@ -24,10 +18,7 @@ export const getDashboardStats = async (req, res, next) => {
       prisma.order.count({ where: { status: { in: ['CONFIRMED', 'SHIPPED'] } } }),
       prisma.order.count({ where: { status: 'DELIVERED' } }),
       prisma.order.count({ where: { status: 'CANCELLED' } }),
-      prisma.order.aggregate({
-        _sum: { totalPrice: true },
-        where: { status: 'DELIVERED', isPaid: true },
-      }),
+      prisma.order.aggregate({ _sum: { totalPrice: true }, where: { status: 'DELIVERED', isPaid: true } }),
       prisma.order.findMany({
         take: 10, orderBy: { createdAt: 'desc' },
         include: {
@@ -55,8 +46,7 @@ export const getDashboardStats = async (req, res, next) => {
       totalUsers, totalProducts, totalOrders,
       pendingOrders, inProgressOrders, deliveredOrders, cancelledOrders,
       totalRevenue: revenueResult._sum.totalPrice || 0,
-      recentOrders, lowStockProducts, recentReviews,
-      activeUsers,
+      recentOrders, lowStockProducts, recentReviews, activeUsers,
     }))
   } catch (err) { next(err) }
 }
@@ -95,27 +85,20 @@ export const getProductById = async (req, res, next) => {
 export const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, discountPrice, stock, categoryId, isActive } = req.body
-
-    if (!name || !price || !stock || !categoryId) {
-      return res.status(400).json(new ApiResponse(400, 'Missing required fields: name, price, stock, categoryId'))
-    }
+    if (!name || !price || !stock || !categoryId)
+      return res.status(400).json(new ApiResponse(400, 'Missing required fields'))
 
     const category = await prisma.category.findUnique({ where: { id: Number(categoryId) } })
-    if (!category) {
-      return res.status(400).json(new ApiResponse(400, 'Category not found'))
-    }
+    if (!category) return res.status(400).json(new ApiResponse(400, 'Category not found'))
 
     let images = []
     if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map(file => uploadToCloudinary(file.buffer, 'swc/products'))
-      images = await Promise.all(uploadPromises)
+      images = await Promise.all(req.files.map(file => uploadToCloudinary(file.buffer, 'swc/products')))
     }
 
     const product = await prisma.product.create({
       data: {
-        name,
-        description: description || '',
-        images,
+        name, description: description || '', images,
         price: Number(price),
         discountPrice: discountPrice ? Number(discountPrice) : null,
         stock: Number(stock),
@@ -123,24 +106,17 @@ export const createProduct = async (req, res, next) => {
         isActive: isActive !== undefined ? Boolean(isActive) : true,
       },
     })
-
     res.status(201).json(new ApiResponse(201, 'Product created', product))
-  } catch (err) {
-    console.error('Create product error:', err)
-    next(err)
-  }
+  } catch (err) { next(err) }
 }
 
 export const updateProduct = async (req, res, next) => {
   try {
     const { name, description, price, discountPrice, stock, categoryId, isActive } = req.body
-
     let images
     if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map(file => uploadToCloudinary(file.buffer, 'swc/products'))
-      images = await Promise.all(uploadPromises)
+      images = await Promise.all(req.files.map(file => uploadToCloudinary(file.buffer, 'swc/products')))
     }
-
     const product = await prisma.product.update({
       where: { id: Number(req.params.id) },
       data: {
@@ -179,15 +155,9 @@ export const getAllCategories = async (req, res, next) => {
 export const createCategory = async (req, res, next) => {
   try {
     const { name, description } = req.body
-
     let image = null
-    if (req.file) {
-      image = await uploadToCloudinary(req.file.buffer, 'swc/categories')
-    }
-
-    const category = await prisma.category.create({
-      data: { name, description, image }
-    })
+    if (req.file) image = await uploadToCloudinary(req.file.buffer, 'swc/categories')
+    const category = await prisma.category.create({ data: { name, description, image } })
     res.status(201).json(new ApiResponse(201, 'Category created', category))
   } catch (err) { next(err) }
 }
@@ -195,12 +165,8 @@ export const createCategory = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   try {
     const { name, description } = req.body
-
     let image
-    if (req.file) {
-      image = await uploadToCloudinary(req.file.buffer, 'swc/categories')
-    }
-
+    if (req.file) image = await uploadToCloudinary(req.file.buffer, 'swc/categories')
     const category = await prisma.category.update({
       where: { id: Number(req.params.id) },
       data: {
@@ -227,12 +193,7 @@ export const getAllOrders = async (req, res, next) => {
     const skip = (Number(page) - 1) * Number(limit)
     const where = {
       ...(status && { status }),
-      ...(search && {
-        OR: [
-          { fullName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-        ]
-      }),
+      ...(search && { OR: [{ fullName: { contains: search, mode: 'insensitive' } }, { email: { contains: search, mode: 'insensitive' } }] }),
     }
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
@@ -287,49 +248,22 @@ export const getAllSlides = async (req, res, next) => {
 export const createSlide = async (req, res, next) => {
   try {
     const { title, subtitle, desc, bgColor, link, order, isActive } = req.body
-
     let image = null
-    if (req.file) {
-      image = await uploadToCloudinary(req.file.buffer, 'carousel')
-    }
-
+    if (req.file) image = await uploadToCloudinary(req.file.buffer, 'carousel')
     const slide = await prisma.carouselSlide.create({
-      data: {
-        title,
-        subtitle,
-        desc,
-        image,
-        bgColor: bgColor || '#18181b',
-        link,
-        order: Number(order || 0),
-        isActive: isActive !== undefined ? Boolean(isActive) : true,
-      },
+      data: { title, subtitle, desc, image, bgColor: bgColor || '#18181b', link, order: Number(order || 0), isActive: isActive !== undefined ? Boolean(isActive) : true },
     })
-
     res.status(201).json(new ApiResponse(201, 'Slide created', slide))
-  } catch (err) {
-    console.error('Create slide error:', err)
-    next(err)
-  }
+  } catch (err) { next(err) }
 }
 
 export const updateSlide = async (req, res, next) => {
   try {
-    const existingSlide = await prisma.carouselSlide.findUnique({
-      where: { id: Number(req.params.id) },
-    })
-    if (!existingSlide) {
-      return res.status(404).json(new ApiResponse(404, 'Slide not found'))
-    }
-
+    const existingSlide = await prisma.carouselSlide.findUnique({ where: { id: Number(req.params.id) } })
+    if (!existingSlide) return res.status(404).json(new ApiResponse(404, 'Slide not found'))
     let image = existingSlide.image
-
-    if (req.file) {
-      image = await uploadToCloudinary(req.file.buffer, 'carousel')
-    }
-
+    if (req.file) image = await uploadToCloudinary(req.file.buffer, 'carousel')
     const { title, subtitle, desc, bgColor, link, order, isActive } = req.body
-
     const slide = await prisma.carouselSlide.update({
       where: { id: Number(req.params.id) },
       data: {
@@ -343,32 +277,21 @@ export const updateSlide = async (req, res, next) => {
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
       },
     })
-
     res.status(200).json(new ApiResponse(200, 'Slide updated', slide))
-  } catch (err) {
-    console.error('Update slide error:', err)
-    next(err)
-  }
+  } catch (err) { next(err) }
 }
 
 export const deleteSlide = async (req, res, next) => {
   try {
     await prisma.carouselSlide.delete({ where: { id: Number(req.params.id) } })
     res.status(200).json(new ApiResponse(200, 'Slide deleted'))
-  } catch (err) {
-    console.error('Delete slide error:', err)
-    next(err)
-  }
+  } catch (err) { next(err) }
 }
 
 export const reorderSlides = async (req, res, next) => {
   try {
     const { slides } = req.body
-    await Promise.all(
-      slides.map(({ id, order }) =>
-        prisma.carouselSlide.update({ where: { id }, data: { order } })
-      )
-    )
+    await Promise.all(slides.map(({ id, order }) => prisma.carouselSlide.update({ where: { id }, data: { order } })))
     res.status(200).json(new ApiResponse(200, 'Slides reordered'))
   } catch (err) { next(err) }
 }
@@ -451,11 +374,13 @@ export const getSalesAnalytics = async (req, res, next) => {
     const fromDate = from ? new Date(from) : new Date(new Date().setDate(new Date().getDate() - 30))
     const toDate = to ? new Date(to) : new Date()
 
-    const [totalSales, ordersByStatus, topProducts, revenueByDate] = await Promise.all([
+    const [totalSales, ordersByStatus, topProducts, revenueByDate, totalOrders, totalUsers] = await Promise.all([
       prisma.order.aggregate({ _sum: { totalPrice: true }, _count: { id: true }, where: { status: 'DELIVERED', createdAt: { gte: fromDate, lte: toDate } } }),
       prisma.order.groupBy({ by: ['status'], _count: { id: true }, where: { createdAt: { gte: fromDate, lte: toDate } } }),
       prisma.orderItem.groupBy({ by: ['productId'], _sum: { quantity: true, price: true }, orderBy: { _sum: { price: 'desc' } }, take: 5 }),
       prisma.order.findMany({ where: { status: 'DELIVERED', createdAt: { gte: fromDate, lte: toDate } }, select: { createdAt: true, totalPrice: true }, orderBy: { createdAt: 'asc' } }),
+      prisma.order.count(),
+      prisma.user.count(),
     ])
 
     const productIds = topProducts.map(p => p.productId)
@@ -466,6 +391,7 @@ export const getSalesAnalytics = async (req, res, next) => {
     res.status(200).json(new ApiResponse(200, 'Analytics fetched', {
       totalRevenue: totalSales._sum.totalPrice || 0,
       totalDeliveredOrders: totalSales._count.id,
+      totalOrders, totalUsers,
       ordersByStatus, revenueByDate,
       topProducts: enrichedTopProducts,
       range: { from: fromDate, to: toDate },

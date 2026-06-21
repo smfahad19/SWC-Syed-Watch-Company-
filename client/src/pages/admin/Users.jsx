@@ -1,12 +1,13 @@
-// Users.jsx
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
-import { FiUsers, FiTrash2, FiMail, FiShoppingBag } from 'react-icons/fi';
+import { FiUsers, FiTrash2, FiMail, FiShoppingBag, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [editingRole, setEditingRole] = useState(null);
+    const [selectedRole, setSelectedRole] = useState('');
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -32,12 +33,21 @@ const Users = () => {
         }
     };
 
+    const handleRoleUpdate = async (id) => {
+        try {
+            await api.put(`/admin/users/${id}/role`, { role: selectedRole });
+            toast.success('Role updated');
+            setEditingRole(null);
+            fetchUsers();
+        } catch {
+            toast.error('Failed to update role');
+        }
+    };
+
     if (loading) return <div className="text-white/40 text-sm animate-pulse">Loading users…</div>;
 
     return (
         <div>
-
-            {/* Header */}
             <div className="flex items-center gap-3 mb-6 sm:mb-8 flex-wrap">
                 <div className="p-2.5 rounded-2xl bg-blue-600/20 border border-blue-500/20">
                     <FiUsers className="text-blue-400 text-2xl" />
@@ -48,7 +58,6 @@ const Users = () => {
                 </span>
             </div>
 
-            {/* Table */}
             <div className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl shadow-xl shadow-black/20 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[700px]">
@@ -74,37 +83,60 @@ const Users = () => {
                                     </td>
                                     <td className="px-3 sm:px-5 py-3 sm:py-3.5">
                                         <div className="flex items-center gap-1.5 text-white/50 text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
-                                            <FiMail className="text-white/20 text-[10px] sm:text-xs flex-shrink-0" />
+                                            <FiMail className="text-white/20 flex-shrink-0" />
                                             {user.email}
                                         </div>
                                     </td>
                                     <td className="px-3 sm:px-5 py-3 sm:py-3.5">
-                                        <span className={`text-[8px] sm:text-[10px] font-semibold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full ${user.role === 'SELLER'
-                                                ? 'bg-violet-500/20 text-violet-400 border border-violet-500/20'
-                                                : 'bg-white/5 text-white/30 border border-white/10'
-                                            }`}>
-                                            {user.role}
-                                        </span>
+                                        {editingRole === user.id ? (
+                                            <div className="flex items-center gap-1">
+                                                <select
+                                                    value={selectedRole}
+                                                    onChange={(e) => setSelectedRole(e.target.value)}
+                                                    className="bg-[#0e1629] border border-white/10 rounded-xl px-2 py-1 text-xs text-white outline-none"
+                                                >
+                                                    <option value="BUYER">BUYER</option>
+                                                    <option value="SELLER">SELLER</option>
+                                                </select>
+                                                <button onClick={() => handleRoleUpdate(user.id)} className="p-1 text-emerald-400 hover:text-emerald-300">
+                                                    <FiCheck className="text-xs" />
+                                                </button>
+                                                <button onClick={() => setEditingRole(null)} className="p-1 text-red-400 hover:text-red-300">
+                                                    <FiX className="text-xs" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className={`text-[8px] sm:text-[10px] font-semibold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full ${user.role === 'SELLER' ? 'bg-violet-500/20 text-violet-400 border border-violet-500/20' : 'bg-white/5 text-white/30 border border-white/10'}`}>
+                                                {user.role}
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-3 sm:px-5 py-3 sm:py-3.5">
-                                        <span className={`text-[8px] sm:text-[10px] font-semibold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full ${user.isVerified
-                                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                                                : 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
-                                            }`}>
+                                        <span className={`text-[8px] sm:text-[10px] font-semibold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full ${user.isVerified ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/20 text-amber-400 border border-amber-500/20'}`}>
                                             {user.isVerified ? 'Verified' : 'Unverified'}
                                         </span>
                                     </td>
                                     <td className="px-3 sm:px-5 py-3 sm:py-3.5">
                                         <div className="flex items-center gap-1.5 text-white/40 text-[10px] sm:text-xs">
-                                            <FiShoppingBag className="text-white/20 text-[10px] sm:text-xs" />
+                                            <FiShoppingBag className="text-white/20" />
                                             {user._count?.orders || 0}
                                         </div>
                                     </td>
                                     <td className="px-3 sm:px-5 py-3 sm:py-3.5">
-                                        <button onClick={() => handleDelete(user.id)}
-                                            className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-red-400 hover:border-red-500/30 transition-all duration-200">
-                                            <FiTrash2 className="text-xs sm:text-sm" />
-                                        </button>
+                                        <div className="flex items-center gap-1 sm:gap-2">
+                                            <button
+                                                onClick={() => { setEditingRole(user.id); setSelectedRole(user.role); }}
+                                                className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-blue-400 hover:border-blue-500/30 transition-all duration-200"
+                                            >
+                                                <FiEdit2 className="text-xs sm:text-sm" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(user.id)}
+                                                className="p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+                                            >
+                                                <FiTrash2 className="text-xs sm:text-sm" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
