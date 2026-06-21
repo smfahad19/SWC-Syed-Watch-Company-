@@ -9,7 +9,7 @@ const router = express.Router();
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/logout', logout);
-router.post('/auth/google-signup-complete', googleSignupComplete);
+router.post('/google-signup-complete', googleSignupComplete);
 router.post('/google', googleLogin);
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
