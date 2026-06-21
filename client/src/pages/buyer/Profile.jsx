@@ -34,9 +34,9 @@ const Profile = () => {
       ])
       const p = profileRes.data.data
       setForm({ name: p.name, phone: p.phone || '', address: p.address || '', city: p.city || '' })
-      setOrders(ordersRes.data.data)
+      setOrders(ordersRes.data.data || [])
     } catch {
-      toast.error('Data load nahi hua')
+      toast.error('Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -52,9 +52,9 @@ const Profile = () => {
     try {
       const res = await api.put('/buyer/profile', form)
       dispatch(loginSuccess({ ...user, ...res.data.data }))
-      toast.success('Profile update ho gaya')
+      toast.success('Profile updated successfully')
     } catch {
-      toast.error('Update nahi hua')
+      toast.error('Failed to update profile')
     } finally {
       setSaving(false)
     }
@@ -64,7 +64,6 @@ const Profile = () => {
 
   return (
     <div className='max-w-4xl mx-auto px-4 py-12'>
-
       <h1 className='text-2xl font-bold tracking-widest uppercase mb-8'>My Profile</h1>
 
       <form onSubmit={handleSave} className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-14'>
@@ -100,13 +99,13 @@ const Profile = () => {
       <h2 className='text-xl font-bold tracking-widest uppercase mb-6'>My Orders</h2>
 
       {orders.length === 0 ? (
-        <p className='text-gray-400 text-sm'>Koi order nahi abhi tak</p>
+        <p className='text-gray-400 text-sm'>No orders yet</p>
       ) : (
         <div className='flex flex-col gap-3'>
           {orders.map((order) => (
             <Link
               key={order.id}
-              to={`/profile/orders/${order.id}`}   // ✅ FIXED: now includes /profile/
+              to={`/profile/orders/${order.id}`}
               className='border border-gray-200 p-5 flex items-center justify-between hover:border-black transition group'
             >
               <div>
@@ -131,7 +130,6 @@ const Profile = () => {
           ))}
         </div>
       )}
-
     </div>
   )
 }

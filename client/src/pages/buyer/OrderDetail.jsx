@@ -39,7 +39,7 @@ const OrderDetail = () => {
       const orderData = res.data.data || res.data;
       setOrder(orderData);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Order could not be loaded');
+      toast.error(err.response?.data?.message || 'Failed to load order');
       setOrder(null);
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ const OrderDetail = () => {
     setCancelling(true);
     try {
       await api.put(`/buyer/orders/${id}/cancel`);
-      toast.success('Order canceled successfully');
+      toast.success('Order cancelled successfully');
       fetchOrder();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to cancel order');
@@ -79,9 +79,7 @@ const OrderDetail = () => {
   const currentStep = statusSteps.indexOf(order.status);
   const StatusIcon = statusIcon(order.status);
   const statusClasses = statusColor(order.status);
-
-  const items = order.items || [];
-  const hasItems = items.length > 0;
+  const items = Array.isArray(order.items) ? order.items : [];
 
   return (
     <div className="bg-white min-h-screen py-8 px-4 sm:py-14">
@@ -94,15 +92,12 @@ const OrderDetail = () => {
           <FiArrowLeft /> Back to My Orders
         </Link>
 
-        {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4 mb-10">
           <div>
             <h1 className="text-2xl font-bold tracking-widest uppercase text-black">Order #{order.id}</h1>
             <p className="text-xs text-gray-400 mt-2">
               Placed on {new Date(order.createdAt).toLocaleDateString('en-PK', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
+                day: 'numeric', month: 'long', year: 'numeric',
               })}
             </p>
           </div>
@@ -112,7 +107,6 @@ const OrderDetail = () => {
           </span>
         </div>
 
-        {/* Progress tracker */}
         {!isCancelled && (
           <div className="mb-10 bg-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between relative">
@@ -125,20 +119,12 @@ const OrderDetail = () => {
               />
               {statusSteps.map((step, i) => (
                 <div key={step} className="flex flex-col items-center z-10">
-                  <div
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs transition-all ${
-                      i <= currentStep
-                        ? 'bg-black border-black text-white'
-                        : 'bg-white border-gray-300 text-gray-300'
-                    }`}
-                  >
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs transition-all ${i <= currentStep ? 'bg-black border-black text-white' : 'bg-white border-gray-300 text-gray-300'
+                    }`}>
                     {i < currentStep ? '✓' : i === currentStep ? '●' : ''}
                   </div>
-                  <p
-                    className={`text-xs mt-2 tracking-widest uppercase ${
-                      i <= currentStep ? 'text-black font-semibold' : 'text-gray-400'
-                    }`}
-                  >
+                  <p className={`text-xs mt-2 tracking-widest uppercase ${i <= currentStep ? 'text-black font-semibold' : 'text-gray-400'
+                    }`}>
                     {step}
                   </p>
                 </div>
@@ -154,69 +140,41 @@ const OrderDetail = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
-          {/* Delivery Details */}
           <div className="bg-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-5 shadow-sm">
             <h2 className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-4 flex items-center gap-2">
               <FiPackage className="text-gray-500" /> Delivery Details
             </h2>
             <div className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Name</span>
-                <span className="font-medium text-black">{order.fullName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Phone</span>
-                <span className="text-black">{order.phone}</span>
-              </div>
-              {order.email && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400 text-xs">Email</span>
-                  <span className="text-black">{order.email}</span>
+              {[
+                { label: 'Name', value: order.fullName },
+                { label: 'Phone', value: order.phone },
+                order.email && { label: 'Email', value: order.email },
+                { label: 'Address', value: `${order.address}${order.apartment ? `, ${order.apartment}` : ''}` },
+                order.landmark && { label: 'Landmark', value: order.landmark },
+                { label: 'City', value: order.city },
+                { label: 'Postal Code', value: order.postalCode },
+                { label: 'Province', value: order.province },
+              ].filter(Boolean).map(({ label, value }) => (
+                <div key={label} className="flex justify-between">
+                  <span className="text-gray-400 text-xs">{label}</span>
+                  <span className="font-medium text-black text-right max-w-[60%]">{value}</span>
                 </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Address</span>
-                <span className="text-right max-w-[60%] text-black">
-                  {order.address}
-                  {order.apartment ? `, ${order.apartment}` : ''}
-                </span>
-              </div>
-              {order.landmark && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400 text-xs">Landmark</span>
-                  <span className="text-black">{order.landmark}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">City</span>
-                <span className="text-black">{order.city}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Postal Code</span>
-                <span className="text-black">{order.postalCode}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Province</span>
-                <span className="text-black">{order.province}</span>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Order Summary */}
           <div className="bg-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-5 shadow-sm">
             <h2 className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-4 flex items-center gap-2">
               <FiCheckCircle className="text-gray-500" /> Order Summary
             </h2>
-            {hasItems ? (
+            {items.length > 0 ? (
               <div className="flex flex-col gap-3">
                 {items.map((item) => {
-                  const product = item.product || {};
-                  const productName = product.name || item.productName || 'Product';
-                  // 👇 Use variant image if available
-                  const variantImage = item.variant?.image || null;
-                  const productImage = variantImage || product.images?.[0] || item.image || null;
-                  const price = item.price || 0;
-                  const quantity = item.quantity || 1;
+                  const product = item.product || {}
+                  const productName = product.name || 'Product'
+                  const productImage = item.variant?.image || product.images?.[0] || null
+                  const price = item.price || 0
+                  const quantity = item.quantity || 1
                   return (
                     <div key={item.id} className="flex items-center gap-3 bg-white/50 p-2 rounded-xl border border-gray-100">
                       <div className="w-12 h-12 bg-gray-100 flex-shrink-0 rounded-lg overflow-hidden">
@@ -239,7 +197,7 @@ const OrderDetail = () => {
                         Rs. {(price * quantity).toLocaleString()}
                       </span>
                     </div>
-                  );
+                  )
                 })}
               </div>
             ) : (
@@ -259,7 +217,6 @@ const OrderDetail = () => {
           </div>
         </div>
 
-        {/* Cancel button */}
         {order.status === 'PENDING' && (
           <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm">
             <div>
