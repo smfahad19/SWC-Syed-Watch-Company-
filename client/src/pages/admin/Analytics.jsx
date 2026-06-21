@@ -1,17 +1,9 @@
-// Analytics.jsx
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import {
-    FiTrendingUp,
-    FiTruck,
-    FiPieChart,
-    FiPackage,
-    FiDollarSign,
-    FiShoppingCart,
-    FiUsers,
-    FiClock,
-    FiBarChart2,
+    FiTrendingUp, FiTruck, FiPieChart, FiPackage,
+    FiDollarSign, FiShoppingCart, FiUsers, FiClock, FiBarChart2,
 } from 'react-icons/fi';
 
 const Analytics = () => {
@@ -32,19 +24,17 @@ const Analytics = () => {
     };
 
     if (loading) return <div className="text-white/40 text-sm animate-pulse">Loading analytics…</div>;
-    if (!data) return null;
+    if (!data) return <div className="text-white/40 text-sm">No data available.</div>;
 
     const stats = [
-        { label: 'Total Revenue', value: `Rs. ${data.totalRevenue?.toLocaleString()}`, icon: FiDollarSign, color: 'text-blue-400' },
-        { label: 'Delivered Orders', value: data.totalDeliveredOrders, icon: FiTruck, color: 'text-emerald-400' },
-        { label: 'Total Orders', value: data.totalOrders, icon: FiShoppingCart, color: 'text-violet-400' },
-        { label: 'Active Users', value: data.totalUsers, icon: FiUsers, color: 'text-amber-400' },
+        { label: 'Total Revenue', value: `Rs. ${(data.totalRevenue || 0).toLocaleString()}`, icon: FiDollarSign, color: 'text-blue-400' },
+        { label: 'Delivered Orders', value: data.totalDeliveredOrders || 0, icon: FiTruck, color: 'text-emerald-400' },
+        { label: 'Total Orders', value: data.totalOrders || 0, icon: FiShoppingCart, color: 'text-violet-400' },
+        { label: 'Total Users', value: data.totalUsers || 0, icon: FiUsers, color: 'text-amber-400' },
     ];
 
     return (
         <div>
-
-            {/* Header */}
             <div className="flex items-center gap-3 mb-6 sm:mb-8 flex-wrap">
                 <div className="p-2.5 rounded-2xl bg-blue-600/20 border border-blue-500/20">
                     <FiBarChart2 className="text-blue-400 text-2xl" />
@@ -55,15 +45,11 @@ const Analytics = () => {
                 </span>
             </div>
 
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {stats.map((s, i) => {
                     const Icon = s.icon;
                     return (
-                        <div
-                            key={i}
-                            className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20 hover:border-blue-500/20 transition-all duration-300"
-                        >
+                        <div key={i} className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20 hover:border-blue-500/20 transition-all duration-300">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
                                     <p className="text-[9px] sm:text-[10px] tracking-[0.2em] uppercase text-white/30 font-medium truncate">{s.label}</p>
@@ -78,41 +64,40 @@ const Analytics = () => {
                 })}
             </div>
 
-            {/* Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
-                {/* Orders by Status */}
-                <div className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20 hover:border-blue-500/20 transition-all duration-300">
+                <div className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20">
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
                         <FiPieChart className="text-blue-400 text-lg" />
                         <h2 className="text-xs sm:text-sm font-semibold tracking-widest text-white/80">Orders by Status</h2>
                     </div>
                     <div className="flex flex-col gap-2 sm:gap-2.5">
-                        {data.ordersByStatus?.map((s) => (
+                        {data.ordersByStatus?.length > 0 ? data.ordersByStatus.map((s) => (
                             <div key={s.status} className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-white/5 gap-1 sm:gap-0">
                                 <span className="text-[10px] sm:text-xs uppercase tracking-wider text-white/40">{s.status}</span>
                                 <div className="flex items-center gap-2 sm:gap-3">
                                     <div className="w-20 sm:w-32 h-1.5 bg-white/5 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-blue-500/60 rounded-full"
-                                            style={{ width: `${Math.min((s._count.id / data.totalOrders) * 100, 100)}%` }}
+                                            style={{ width: `${Math.min((s._count.id / (data.totalOrders || 1)) * 100, 100)}%` }}
                                         />
                                     </div>
                                     <span className="text-xs sm:text-sm font-bold text-white/80">{s._count.id}</span>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <p className="text-white/20 text-xs">No orders yet.</p>
+                        )}
                     </div>
                 </div>
 
-                {/* Top Products */}
-                <div className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20 hover:border-blue-500/20 transition-all duration-300">
+                <div className="bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20">
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
                         <FiPackage className="text-emerald-400 text-lg" />
                         <h2 className="text-xs sm:text-sm font-semibold tracking-widest text-white/80">Top Products</h2>
                     </div>
                     <div className="flex flex-col gap-2 sm:gap-2.5">
-                        {data.topProducts?.slice(0, 5).map((p, i) => (
+                        {data.topProducts?.length > 0 ? data.topProducts.slice(0, 5).map((p, i) => (
                             <div key={p.productId} className="flex justify-between items-center py-2 border-b border-white/5">
                                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                     <span className="text-[10px] sm:text-xs font-bold text-white/20 w-4 sm:w-5 flex-shrink-0">{i + 1}.</span>
@@ -120,12 +105,13 @@ const Analytics = () => {
                                 </div>
                                 <span className="text-xs sm:text-sm font-bold text-white/60 flex-shrink-0">Rs. {p._sum?.price?.toLocaleString()}</span>
                             </div>
-                        ))}
+                        )) : (
+                            <p className="text-white/20 text-xs">No sales yet.</p>
+                        )}
                     </div>
                 </div>
 
-                {/* Revenue Trend (mock) */}
-                <div className="md:col-span-2 bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20 hover:border-blue-500/20 transition-all duration-300">
+                <div className="md:col-span-2 bg-[#0e1629]/60 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/20">
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
                         <FiTrendingUp className="text-amber-400 text-lg" />
                         <h2 className="text-xs sm:text-sm font-semibold tracking-widest text-white/80">Revenue Trend (Last 7 Days)</h2>
@@ -141,9 +127,8 @@ const Analytics = () => {
                             </div>
                         ))}
                     </div>
-                    <p className="text-[8px] sm:text-[10px] text-white/20 text-center mt-3 sm:mt-4 tracking-wider">Mock trend data — integrates with your revenue stream</p>
+                    <p className="text-[8px] sm:text-[10px] text-white/20 text-center mt-3 sm:mt-4 tracking-wider">Mock trend data</p>
                 </div>
-
             </div>
         </div>
     );

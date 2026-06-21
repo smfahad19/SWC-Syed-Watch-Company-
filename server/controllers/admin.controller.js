@@ -472,3 +472,36 @@ export const getSalesAnalytics = async (req, res, next) => {
     }))
   } catch (err) { next(err) }
 }
+
+export const getSalesAnalytics = async (req, res, next) => {
+  try {
+    const { from, to } = req.query
+    const fromDate = from ? new Date(from) : new Date(new Date().setDate(new Date().getDate() - 30))
+    const toDate = to ? new Date(to) : new Date()
+
+    const [totalSales, ordersByStatus, topProducts, revenueByDate, totalOrders, totalUsers] = await Promise.all([
+      prisma.order.aggregate({ _sum: { totalPrice: true }, _count: { id: true }, where: { status: 'DELIVERED', createdAt: { gte: fromDate, lte: toDate } } }),
+      prisma.order.groupBy({ by: ['status'], _count: { id: true }, where: { createdAt: { gte: fromDate, lte: toDate } } }),
+      prisma.orderItem.groupBy({ by: ['productId'], _sum: { quantity: true, price: true }, orderBy: { _sum: { price: 'desc' } }, take: 5 }),
+      prisma.order.findMany({ where: { status: 'DELIVERED', createdAt: { gte: fromDate, lte: toDate } }, select: { createdAt: true, totalPrice: true }, orderBy: { createdAt: 'asc' } }),
+      prisma.order.count(),
+      prisma.user.count(),
+    ])
+
+    const productIds = topProducts.map(p => p.productId)
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, images: true } })
+    const productMap = Object.fromEntries(products.map(p => [p.id, p]))
+    const enrichedTopProducts = topProducts.map(p => ({ ...p, product: productMap[p.productId] || null }))
+
+    res.status(200).json(new ApiResponse(200, 'Analytics fetched', {
+      totalRevenue: totalSales._sum.totalPrice || 0,
+      totalDeliveredOrders: totalSales._count.id,
+      totalOrders,
+      totalUsers,
+      ordersByStatus,
+      revenueByDate,
+      topProducts: enrichedTopProducts,
+      range: { from: fromDate, to: toDate },
+    }))
+  } catch (err) { next(err) }
+}
