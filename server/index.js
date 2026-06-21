@@ -27,9 +27,22 @@ app.use(
   })
 )
 
+const allowedOrigins = [
+  'https://swc-syed-watch-company.vercel.app',
+  'https://swc-syed-watch-company-git-main-fahads-projects-c5bdce25.vercel.app',
+  'https://swc-syed-watch-company-ldodicpm6-fahads-projects-c5bdce25.vercel.app',
+  'http://localhost:5173',
+]
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
     credentials: true,
   })
 )
@@ -45,11 +58,10 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.use('/api/v1', routes)
 
-
-
 app.use(errorHandler)
 
 app.get('/', (req, res) => {
   res.json({ message: 'SWC API is running' })
 })
+
 export default app
