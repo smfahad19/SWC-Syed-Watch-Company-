@@ -11,7 +11,7 @@ const fallbackSlides = [
     id: 'f1',
     title: 'Timeless Precision',
     subtitle: 'Men & Women Watches',
-    desc: 'Six decades of watchmaking heritage. Every piece we carry has been chosen with the same eye for quality our founder had in 1955.',
+    desc: 'Five decades of watchmaking heritage. Every piece we carry has been chosen with the same eye for quality our founder had in 1975.',
     bgColor: '#18181b',
     image: null,
     link: '/products',
@@ -28,13 +28,23 @@ const fallbackSlides = [
   {
     id: 'f3',
     title: 'Now Online',
-    subtitle: 'Syed & Sons — Est. 1955',
+    subtitle: 'Syed & Sons — Est. 1975',
     desc: 'What started as a small watch repair shop in the bazaar is now at your doorstep. Same quality, same trust — delivered nationwide.',
     bgColor: '#0f172a',
     image: null,
     link: '/products',
   },
 ];
+
+const ShimmerCard = () => (
+  <div className="bg-white border border-gray-100 rounded-lg p-4 animate-pulse">
+    <div className="bg-gray-100 aspect-square mb-3 rounded-md" />
+    <div className="h-2.5 bg-gray-100 rounded mb-2 w-1/3" />
+    <div className="h-3 bg-gray-100 rounded mb-3 w-2/3" />
+    <div className="h-3 bg-gray-100 rounded mb-4 w-1/4" />
+    <div className="h-9 bg-gray-100 rounded w-full" />
+  </div>
+);
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -43,6 +53,7 @@ const Home = () => {
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -72,6 +83,8 @@ const Home = () => {
       }
     } catch {
       toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -107,8 +120,8 @@ const Home = () => {
   return (
     <div className="bg-white min-h-screen">
 
-      {/* Carousel */}
-      <div className="relative overflow-hidden h-[90vh]">
+      {/* ── Carousel ── */}
+      <div className="relative overflow-hidden h-[100vh]">
         {activeSlides.map((slide, index) => (
           <div
             key={slide.id}
@@ -124,7 +137,6 @@ const Home = () => {
           >
             {slide.image && <div className="absolute inset-0 bg-black/60" />}
 
-            {/* subtle grain overlay */}
             <div
               className="absolute inset-0 opacity-[0.03]"
               style={{
@@ -132,10 +144,9 @@ const Home = () => {
               }}
             />
 
-            {/* Glass overlay on text for readability (optional) */}
-            <div className="relative z-10 max-w-3xl px-4 py-8 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
+            <div className="relative z-10 max-w-3xl px-4 py-10 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
               <p className="text-xs tracking-[8px] uppercase text-gray-400 mb-6">
-                Syed &amp; Sons &nbsp;·&nbsp; Est. 1955
+                Syed &amp; Sons &nbsp;·&nbsp; Est. 1975
               </p>
               <h1 className="text-5xl md:text-7xl font-bold tracking-widest uppercase mb-5 leading-tight">
                 {slide.title}
@@ -159,10 +170,10 @@ const Home = () => {
                 </Link>
                 {!isLoggedIn && (
                   <Link
-                    to="/signup"
+                    to="/login"
                     className="bg-white text-black px-10 py-3 text-xs tracking-widest uppercase hover:bg-gray-100 transition duration-300"
                   >
-                    Create Account
+                    Login
                   </Link>
                 )}
               </div>
@@ -176,7 +187,7 @@ const Home = () => {
             <button
               key={i}
               onClick={() => goToSlide(i)}
-              className={`h[3px] rounded-full transition-all duration-300 ${
+              className={`h-[3px] rounded-full transition-all duration-300 ${
                 i === currentSlide ? 'bg-white w-8' : 'bg-white/30 w-4'
               }`}
             />
@@ -198,14 +209,14 @@ const Home = () => {
         </button>
       </div>
 
-      {/* Marquee strip */}
+      {/* ── Marquee ── */}
       <div className="bg-black text-white py-4 overflow-hidden">
         <div className="flex whitespace-nowrap animate-marquee gap-16 text-xs tracking-[6px] uppercase text-gray-400">
           {[...Array(4)].map((_, i) => (
             <span key={i} className="flex gap-16 shrink-0">
               <span>Syed &amp; Sons</span>
               <span>·</span>
-              <span>Est. 1955</span>
+              <span>Est. 1975</span>
               <span>·</span>
               <span>Watches</span>
               <span>·</span>
@@ -220,7 +231,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Our Story */}
+      {/* ── Our Story ── */}
       <div className="max-w-6xl mx-auto px-4 py-20 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <div>
           <p className="text-xs tracking-[6px] uppercase text-gray-400 mb-4">Our Story</p>
@@ -228,7 +239,7 @@ const Home = () => {
             From a Small Bazaar Shop to Your Doorstep
           </h2>
           <p className="text-gray-500 text-sm leading-relaxed mb-4">
-            In 1955, our grandfather opened a humble watch repair shop in the heart of the bazaar. With steady hands and an eye for precision, he built a reputation that spread by word of mouth alone.
+            In 1975, our grandfather opened a humble watch repair shop in the heart of the bazaar. With steady hands and an eye for precision, he built a reputation that spread by word of mouth alone.
           </p>
           <p className="text-gray-500 text-sm leading-relaxed mb-4">
             Decades passed, the shop grew, and two more generations joined the craft. Today, Syed &amp; Sons carries the same values — genuine quality, honest pricing, and lasting relationships — into the digital age.
@@ -244,17 +255,16 @@ const Home = () => {
           </Link>
         </div>
 
-        {/* Stats with glass effect */}
         <div className="grid grid-cols-2 gap-4">
           {[
-            { value: '70+', label: 'Years of Heritage' },
+            { value: '50+', label: 'Years of Heritage' },
             { value: '3', label: 'Generations' },
             { value: '1000+', label: 'Happy Customers' },
-            { value: '1955', label: 'Established' },
+            { value: '1975', label: 'Established' },
           ].map((stat) => (
             <div
               key={stat.label}
-              className="border border-gray-100 p-8 text-center hover:border-black transition bg-white/40 backdrop-blur-sm shadow-sm hover:shadow-md"
+              className="border border-gray-100 p-8 text-center hover:border-black transition bg-white shadow-sm hover:shadow-md"
             >
               <p className="text-3xl font-bold mb-2">{stat.value}</p>
               <p className="text-xs text-gray-400 tracking-widest uppercase">{stat.label}</p>
@@ -263,74 +273,97 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Categories with glass effect */}
-      <div className="bg-gray-50/80 backdrop-blur-sm py-16 px-4">
+      {/* ── Categories ── */}
+      <div className="bg-gray-50 py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <p className="text-xs tracking-[6px] uppercase text-gray-400 text-center mb-3">Browse By</p>
           <h2 className="text-2xl font-bold text-center tracking-widest uppercase mb-10">Categories</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.name)}
-                className={`cursor-pointer p-10 text-center border transition duration-300 ${
-                  activeCategory === cat.name
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-200 bg-white/60 backdrop-blur-sm hover:border-black hover:bg-white/80'
-                }`}
-              >
-                {cat.image && (
-                  <img src={cat.image} alt={cat.name} className="w-10 h-10 object-cover mx-auto mb-4 opacity-70" />
-                )}
-                <h3 className="text-base font-bold tracking-widest uppercase mb-2">{cat.name}</h3>
-                {cat.description && (
-                  <p className={`text-xs leading-relaxed ${activeCategory === cat.name ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {cat.description}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse bg-white border border-gray-100 p-10 rounded">
+                  <div className="w-10 h-10 bg-gray-100 rounded mx-auto mb-4" />
+                  <div className="h-4 bg-gray-100 rounded w-1/2 mx-auto mb-2" />
+                  <div className="h-3 bg-gray-100 rounded w-3/4 mx-auto" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.name)}
+                  className={`cursor-pointer p-10 text-center border transition duration-300 ${
+                    activeCategory === cat.name
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-200 bg-white hover:border-black'
+                  }`}
+                >
+                  {cat.image && (
+                    <img src={cat.image} alt={cat.name} className="w-10 h-10 object-cover mx-auto mb-4 opacity-70" />
+                  )}
+                  <h3 className="text-base font-bold tracking-widest uppercase mb-2">{cat.name}</h3>
+                  {cat.description && (
+                    <p className={`text-xs leading-relaxed ${activeCategory === cat.name ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {cat.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Products */}
+      {/* ── Products ── */}
       <div className="max-w-6xl mx-auto px-4 py-16">
         <p className="text-xs tracking-[6px] uppercase text-gray-400 text-center mb-3">Our Collection</p>
         <h2 className="text-2xl font-bold text-center tracking-widest uppercase mb-4">Featured Products</h2>
         <p className="text-center text-gray-400 text-sm mb-10 max-w-lg mx-auto">
-          Handpicked pieces from our store — the same quality our customers have trusted since 1955.
+          Handpicked pieces from our store — the same quality our customers have trusted since 1975.
         </p>
 
         {/* Filter tabs */}
-        <div className="flex justify-center gap-2 mb-10 flex-wrap">
-          <button
-            onClick={() => setActiveCategory('All')}
-            className={`text-xs px-5 py-2 tracking-widest uppercase border transition ${
-              activeCategory === 'All' ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-500 hover:border-black'
-            }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
+        {!loading && (
+          <div className="flex justify-center gap-2 mb-10 flex-wrap">
             <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.name)}
+              onClick={() => setActiveCategory('All')}
               className={`text-xs px-5 py-2 tracking-widest uppercase border transition ${
-                activeCategory === cat.name ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-500 hover:border-black'
+                activeCategory === 'All' ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-500 hover:border-black'
               }`}
             >
-              {cat.name}
+              All
             </button>
-          ))}
-        </div>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.name)}
+                className={`text-xs px-5 py-2 tracking-widest uppercase border transition ${
+                  activeCategory === cat.name ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-500 hover:border-black'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {filtered.length === 0 ? (
+        {/* Grid */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => <ShimmerCard key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
           <p className="text-center text-gray-400 text-sm py-16">No products found</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filtered.map((product) => (
-              <div key={product.id} className="group bg-white/40 backdrop-blur-sm border border-gray-100 rounded-lg p-4 hover:border-black hover:shadow-md transition-all duration-300">
+              <div
+                key={product.id}
+                className="group bg-white border border-gray-100 rounded-lg p-4 hover:border-black hover:shadow-md transition-all duration-300"
+              >
                 <Link to={`/products/${product.id}`}>
                   <div className="bg-gray-50 aspect-square mb-3 flex items-center justify-center overflow-hidden rounded-md">
                     {product.images?.[0] ? (
@@ -386,8 +419,8 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Why Us with glass effect */}
-      <div className="bg-gray-50/80 backdrop-blur-sm py-16 px-4">
+      {/* ── Why Us ── */}
+      <div className="bg-gray-50 py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <p className="text-xs tracking-[6px] uppercase text-gray-400 text-center mb-3">Why Syed &amp; Sons</p>
           <h2 className="text-2xl font-bold text-center tracking-widest uppercase mb-12">The Difference You Can Feel</h2>
@@ -395,7 +428,7 @@ const Home = () => {
             {[
               {
                 title: 'Authenticity Guaranteed',
-                desc: 'Every product we sell is genuine. No replicas, no shortcuts. Our reputation has been built on this promise since 1955.',
+                desc: 'Every product we sell is genuine. No replicas, no shortcuts. Our reputation has been built on this promise since 1975.',
               },
               {
                 title: 'Cash on Delivery',
@@ -406,7 +439,10 @@ const Home = () => {
                 desc: 'From Karachi to Gilgit, we deliver across Pakistan. What once required a trip to the bazaar now comes to you.',
               },
             ].map((item) => (
-              <div key={item.title} className="text-center px-6 py-8 bg-white/40 backdrop-blur-sm border border-gray-100 rounded-lg hover:border-black transition-all duration-300 hover:shadow-md">
+              <div
+                key={item.title}
+                className="text-center px-6 py-8 bg-white border border-gray-100 rounded-lg hover:border-black transition-all duration-300 hover:shadow-md"
+              >
                 <h3 className="text-sm font-bold tracking-widest uppercase mb-3">{item.title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
               </div>
@@ -415,11 +451,11 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Bottom CTA */}
+      {/* ── Bottom CTA ── */}
       <div className="bg-black text-white py-20 px-4 text-center">
         <p className="text-xs tracking-[8px] uppercase text-gray-500 mb-4">Join the Family</p>
         <h2 className="text-3xl md:text-4xl font-bold tracking-widest uppercase mb-5">
-          70 Years of Trust, Now at Your Door
+          50 Years of Trust, Now at Your Door
         </h2>
         <p className="text-gray-400 text-sm max-w-xl mx-auto mb-10 leading-relaxed">
           Create an account and be part of a legacy that has stood the test of time. Exclusive deals, order tracking, and a shopping experience built on trust.
@@ -433,10 +469,10 @@ const Home = () => {
           </Link>
           {!isLoggedIn && (
             <Link
-              to="/signup"
+              to="/login"
               className="bg-white text-black px-10 py-3 text-xs tracking-widest uppercase hover:bg-gray-200 transition"
             >
-              Create Account
+              Login
             </Link>
           )}
         </div>

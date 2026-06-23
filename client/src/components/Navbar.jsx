@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { FiShoppingCart, FiUser, FiMenu, FiX } from 'react-icons/fi';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { logout } from '../redux/slices/authSlice';
 import { clearCart } from '../redux/slices/cartSlice';
 import api from '../services/api';
@@ -13,6 +13,25 @@ const Navbar = () => {
   const { isLoggedIn, user } = useSelector((state) => state.auth);
   const { items } = useSelector((state) => state.cart);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY < 10) {
+        setVisible(true);
+      } else if (currentY > lastScrollY.current + 5) {
+        setVisible(false);
+        setMenuOpen(false);
+      } else if (currentY < lastScrollY.current - 5) {
+        setVisible(true);
+      }
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -27,12 +46,16 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0e1629]/80 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-black/20">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 bg-[#0e1629]/80 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-black/20 transition-transform duration-300 ${
+        visible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
 
         {/* logo */}
         <Link to="/" className="flex flex-col leading-none">
-          <span className="text-xl font-black tracking-[6px] uppercase text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+          <span className="text-xl font-black tracking-[6px] uppercase text-white">
             S<span className="text-blue-400">&</span>S
           </span>
           <span className="text-[9px] tracking-[3px] uppercase text-white/50">Syed & Sons</span>
@@ -55,7 +78,6 @@ const Navbar = () => {
 
         {/* right side */}
         <div className="flex items-center gap-3">
-
           {isLoggedIn && user?.role === 'BUYER' && (
             <Link
               to="/cart"
@@ -91,27 +113,25 @@ const Navbar = () => {
             <div className="hidden md:flex items-center gap-2">
               <Link
                 to="/login"
-                className="text-xs tracking-widest uppercase text-white/80 hover:text-white transition px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 backdrop-blur-sm"
+                className="text-xs tracking-widest uppercase text-white/80 hover:text-white transition px-3 py-2 rounded-xl border border-white/10 hover:border-white/30"
               >
                 Login
               </Link>
               <Link
                 to="/signup"
-                className="text-xs tracking-widest uppercase bg-blue-600/90 backdrop-blur-sm text-white px-3 py-2 rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.2)] hover:shadow-[0_0_40px_rgba(59,130,246,0.3)] hover:bg-blue-500/90 transition border border-white/10"
+                className="text-xs tracking-widest uppercase bg-blue-600/90 text-white px-3 py-2 rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.2)] hover:bg-blue-500/90 transition border border-white/10"
               >
                 Sign Up
               </Link>
             </div>
           )}
 
-          {/* mobile toggle */}
           <button
             className="md:hidden p-1 text-white/60 hover:text-white transition"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
           </button>
-
         </div>
       </div>
 
