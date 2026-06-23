@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { FiShoppingCart, FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { FiShoppingCart, FiUser, FiMenu, FiX, FiChevronDown } from 'react-icons/fi';
 import { useState, useEffect, useRef } from 'react';
 import { logout } from '../redux/slices/authSlice';
 import { clearCart } from '../redux/slices/cartSlice';
@@ -14,11 +14,13 @@ const Navbar = () => {
   const { items } = useSelector((state) => state.cart);
   const [menuOpen, setMenuOpen] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentY = window.scrollY;
+      setScrolled(currentY > 20);
       if (currentY < 10) {
         setVisible(true);
       } else if (currentY > lastScrollY.current + 5) {
@@ -47,46 +49,69 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 bg-[#0e1629]/80 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-black/20 transition-transform duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         visible ? 'translate-y-0' : '-translate-y-full'
+      } ${
+        scrolled
+          ? 'bg-white/95 backdrop-blur-xl shadow-sm border-b border-gray-100'
+          : 'bg-white/60 backdrop-blur-md border-b border-white/40'
       }`}
     >
-      <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
 
-        {/* logo */}
-        <Link to="/" className="flex flex-col leading-none">
-          <span className="text-xl font-black tracking-[6px] uppercase text-white">
-            S<span className="text-blue-400">&</span>S
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex flex-col leading-none">
+            <span className="text-lg font-black tracking-[5px] uppercase text-gray-900">
+              S<span className="text-amber-600">&</span>S
+            </span>
+            <span className="text-[8px] tracking-[2.5px] uppercase text-gray-400 font-medium">
+              Syed & Sons
+            </span>
+          </div>
+          <div className="hidden sm:block w-px h-7 bg-gray-200" />
+          <span className="hidden sm:block text-[10px] tracking-[2px] uppercase text-gray-400 font-medium">
+            Est. 1975
           </span>
-          <span className="text-[9px] tracking-[3px] uppercase text-white/50">Syed & Sons</span>
         </Link>
 
-        {/* desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-xs tracking-widest uppercase text-white/80 hover:text-white transition">
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-1">
+          <Link
+            to="/"
+            className="px-4 py-2 text-xs tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 font-medium"
+          >
             Home
           </Link>
-          <Link to="/products" className="text-xs tracking-widest uppercase text-white/80 hover:text-white transition">
+          <Link
+            to="/products"
+            className="px-4 py-2 text-xs tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 font-medium"
+          >
             Products
           </Link>
           {isLoggedIn && user?.role === 'BUYER' && (
-            <Link to="/profile" className="text-xs tracking-widest uppercase text-white/80 hover:text-white transition">
+            <Link
+              to="/profile"
+              className="px-4 py-2 text-xs tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 font-medium"
+            >
               My Orders
             </Link>
           )}
         </div>
 
-        {/* right side */}
-        <div className="flex items-center gap-3">
+        {/* Right Side */}
+        <div className="flex items-center gap-2.5">
+
+          {/* Cart */}
           {isLoggedIn && user?.role === 'BUYER' && (
             <Link
               to="/cart"
-              className="relative flex items-center gap-1.5 bg-blue-600/90 backdrop-blur-sm text-white px-3 py-2 text-xs tracking-widest uppercase rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.25)] hover:shadow-[0_0_40px_rgba(59,130,246,0.35)] hover:bg-blue-500/90 transition border border-white/10"
+              className="relative flex items-center gap-2 px-4 py-2 text-xs tracking-widest uppercase text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 font-medium"
             >
-              <FiShoppingCart size={14} />
-              <span>Cart</span>
+              <FiShoppingCart size={15} />
+              <span className="hidden sm:inline">Cart</span>
               {items.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-lg shadow-red-500/30">
+                <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                   {items.length}
                 </span>
               )}
@@ -94,69 +119,124 @@ const Navbar = () => {
           )}
 
           {isLoggedIn ? (
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2">
+              {/* User pill */}
               <Link
                 to="/profile"
-                className="flex items-center gap-1.5 text-xs tracking-widest uppercase text-white/80 hover:text-white transition"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
               >
-                <FiUser size={14} />
-                <span>{user?.name?.split(' ')[0]}</span>
+                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                  <FiUser size={12} className="text-amber-700" />
+                </div>
+                <span className="text-xs tracking-wide font-medium text-gray-700">
+                  {user?.name?.split(' ')[0]}
+                </span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-xs tracking-widest uppercase text-white/50 hover:text-red-400 transition"
+                className="px-4 py-2 text-xs tracking-widest uppercase text-gray-400 hover:text-red-500 transition-all duration-200 font-medium rounded-lg hover:bg-red-50"
               >
                 Logout
               </button>
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2">
+              {/* Login — outlined */}
               <Link
                 to="/login"
-                className="text-xs tracking-widest uppercase text-white/80 hover:text-white transition px-3 py-2 rounded-xl border border-white/10 hover:border-white/30"
+                className="px-5 py-2 text-xs tracking-widest uppercase font-medium text-gray-700 border border-gray-300 rounded-lg hover:border-gray-900 hover:text-gray-900 transition-all duration-200"
               >
                 Login
               </Link>
+              {/* Sign Up — filled */}
               <Link
                 to="/signup"
-                className="text-xs tracking-widest uppercase bg-blue-600/90 text-white px-3 py-2 rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.2)] hover:bg-blue-500/90 transition border border-white/10"
+                className="px-5 py-2 text-xs tracking-widest uppercase font-medium text-white bg-gray-900 rounded-lg hover:bg-amber-600 transition-all duration-300 shadow-sm"
               >
                 Sign Up
               </Link>
             </div>
           )}
 
+          {/* Mobile toggle */}
           <button
-            className="md:hidden p-1 text-white/60 hover:text-white transition"
+            className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            {menuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+            {menuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* mobile menu */}
+      {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-[#0e1629]/90 backdrop-blur-xl border-t border-white/10 px-4 py-5 flex flex-col gap-4 shadow-2xl shadow-black/30">
-          <Link to="/" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-white/80 hover:text-white transition">Home</Link>
-          <Link to="/products" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-white/80 hover:text-white transition">Products</Link>
+        <div className="md:hidden bg-white/98 backdrop-blur-xl border-t border-gray-100 px-6 py-5 flex flex-col gap-1 shadow-lg">
+          <Link
+            to="/"
+            onClick={() => setMenuOpen(false)}
+            className="px-4 py-3 text-sm tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition font-medium"
+          >
+            Home
+          </Link>
+          <Link
+            to="/products"
+            onClick={() => setMenuOpen(false)}
+            className="px-4 py-3 text-sm tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition font-medium"
+          >
+            Products
+          </Link>
+
           {isLoggedIn && user?.role === 'BUYER' && (
             <>
-              <Link to="/cart" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-white/80 hover:text-white transition">Cart ({items.length})</Link>
-              <Link to="/profile" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-white/80 hover:text-white transition">My Orders</Link>
+              <Link
+                to="/cart"
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 text-sm tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition font-medium flex items-center justify-between"
+              >
+                <span>Cart</span>
+                {items.length > 0 && (
+                  <span className="bg-amber-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    {items.length}
+                  </span>
+                )}
+              </Link>
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 text-sm tracking-widest uppercase text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition font-medium"
+              >
+                My Orders
+              </Link>
             </>
           )}
-          {!isLoggedIn && (
-            <>
-              <Link to="/login" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-white/80 hover:text-white transition">Login</Link>
-              <Link to="/signup" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-white/80 hover:text-white transition">Sign Up</Link>
-            </>
-          )}
-          {isLoggedIn && (
-            <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="text-sm tracking-widest uppercase text-red-400 hover:text-red-300 transition text-left">
-              Logout
-            </button>
-          )}
+
+          <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2">
+            {!isLoggedIn ? (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 text-sm tracking-widest uppercase text-center text-gray-700 border border-gray-300 rounded-lg hover:border-gray-900 transition font-medium"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 text-sm tracking-widest uppercase text-center text-white bg-gray-900 rounded-lg hover:bg-amber-600 transition font-medium"
+                >
+                  Sign Up
+                </Link>
+              </>
+            ) : (
+              <button
+                onClick={() => { handleLogout(); setMenuOpen(false); }}
+                className="px-4 py-3 text-sm tracking-widest uppercase text-red-500 hover:bg-red-50 rounded-lg transition font-medium text-left"
+              >
+                Logout
+              </button>
+            )}
+          </div>
         </div>
       )}
     </nav>
