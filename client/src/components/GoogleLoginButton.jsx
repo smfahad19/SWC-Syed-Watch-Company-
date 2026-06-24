@@ -1,69 +1,43 @@
 import { useEffect, useRef } from 'react';
 
-const CLIENT_ID = '1063472421493-dsbk7mc5tiuml1btm6hqbi8l4e8kps4g.apps.googleusercontent.com';
-
-const GoogleLoginButton = ({ onSuccess, onError }) => {
+const GoogleLoginButton = ({ onSuccess}) => {
   const buttonRef = useRef();
 
   useEffect(() => {
-    const initializeGoogle = () => {
-      if (!window.google || !buttonRef.current) return;
-
-      window.google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: (response) => {
-          if (response.credential) {
-            onSuccess(response.credential);
-          } else {
-            onError?.();
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        // ✅ mobile ke liye ux_mode redirect
-        ux_mode: /Mobi|Android/i.test(navigator.userAgent) ? 'redirect' : 'popup',
-        redirect_uri: window.location.origin + '/auth-success',
-      });
-
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-        width: buttonRef.current.offsetWidth || 360,
-        text: 'signin_with',
-        shape: 'rectangular',
-      });
-    };
-
-    if (window.google) {
-      initializeGoogle();
-      return;
-    }
-
-    if (document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-      const interval = setInterval(() => {
-        if (window.google) {
-          clearInterval(interval);
-          initializeGoogle();
-        }
-      }, 100);
-      return () => clearInterval(interval);
-    }
-
+    // Load Google SDK
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
-    script.onload = initializeGoogle;
-    script.onerror = () => onError?.();
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: '1063472421493-dsbk7mc5tiuml1btm6hqbi8l4e8kps4g.apps.googleusercontent.com',
+          callback: (response) => {
+            // response.credential is the ID token
+            onSuccess(response.credential);
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        // Render the Google button inside the div
+        window.google.accounts.id.renderButton(buttonRef.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          width: '380',
+          text: 'signin_with',
+        });
+      }
+    };
     document.head.appendChild(script);
-  }, []);
+  }, [onSuccess]);
 
   return (
-    <div className='w-full flex justify-center'>
-      <div ref={buttonRef} className='w-full' />
+    <div className="w-full">
+      <div ref={buttonRef} className="flex justify-center"></div>
     </div>
   );
 };
 
-export default GoogleLoginButton;
+export default GoogleLoginButton;  complte code do ab
