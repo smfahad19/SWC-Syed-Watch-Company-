@@ -20,18 +20,10 @@ const __dirname = path.dirname(__filename)
 
 app.use(helmet())
 
-// ✅ Health check — rate limit se pehle rakho taake ping block na ho
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
-app.get('/', (req, res) => res.json({ message: 'SWC API is running' }))
-
-// ✅ Rate limit badha diya — 100 bohot strict tha
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => req.path === '/health', // health ping count na ho
+    max: 100,
   })
 )
 
@@ -65,6 +57,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use('/api/v1', routes)
+
 app.use(errorHandler)
+
+app.get('/', (req, res) => {
+  res.json({ message: 'SWC API is running' })
+})
 
 export default app
