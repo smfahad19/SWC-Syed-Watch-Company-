@@ -7,7 +7,7 @@ const GoogleLoginButton = ({ onSuccess, onError }) => {
 
   useEffect(() => {
     const initializeGoogle = () => {
-      if (!window.google) return;
+      if (!window.google || !buttonRef.current) return;
 
       window.google.accounts.id.initialize({
         client_id: CLIENT_ID,
@@ -20,27 +20,26 @@ const GoogleLoginButton = ({ onSuccess, onError }) => {
         },
         auto_select: false,
         cancel_on_tap_outside: true,
+        // ✅ mobile ke liye ux_mode redirect
+        ux_mode: /Mobi|Android/i.test(navigator.userAgent) ? 'redirect' : 'popup',
+        redirect_uri: window.location.origin + '/auth-success',
       });
 
-      if (buttonRef.current) {
-        window.google.accounts.id.renderButton(buttonRef.current, {
-          type: 'standard',
-          theme: 'outline',
-          size: 'large',
-          width: buttonRef.current.offsetWidth || 380,
-          text: 'signin_with',
-          shape: 'rectangular',
-        });
-      }
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        width: buttonRef.current.offsetWidth || 360,
+        text: 'signin_with',
+        shape: 'rectangular',
+      });
     };
 
-    // Already loaded check
     if (window.google) {
       initializeGoogle();
       return;
     }
 
-    // Script already in DOM check
     if (document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
       const interval = setInterval(() => {
         if (window.google) {

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setCart, clearCart } from './redux/slices/cartSlice';
+import { loginSuccess } from './redux/slices/authSlice';
 import api from './services/api';
 
 import Login from './pages/auth/Login';
@@ -23,51 +24,11 @@ import Carousel from './pages/admin/Carousel';
 import Users from './pages/admin/Users';
 import Analytics from './pages/admin/Analytics';
 import Reviews from './pages/admin/Reviews';
-import { loginSuccess } from './redux/slices/authSlice';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// ✅ AuthSuccess — token URL se lo, Redux mein daalo, phir navigate
-const AuthSuccess = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-
-    if (token) {
-      try {
-        const decoded = JSON.parse(atob(token.split('.')[1]));
-        // Pehle localStorage set karo
-        localStorage.setItem('token', token);
-        localStorage.setItem('swc_user', JSON.stringify({
-          id: decoded.id,
-          role: decoded.role,
-          token,
-        }));
-        // Phir dispatch
-        dispatch(loginSuccess({
-          id: decoded.id,
-          role: decoded.role,
-          token,
-        }));
-        // Navigate
-        navigate(decoded.role === 'SELLER' ? '/admin/dashboard' : '/', { replace: true });
-      } catch {
-        navigate('/login', { replace: true });
-      }
-    } else {
-      navigate('/login', { replace: true });
-    }
-  }, []);
-
-  return <div className='min-h-screen flex items-center justify-center text-sm text-gray-500'>Redirecting...</div>;
-};
-
-// ✅ Buyer Layout
 const BuyerLayout = ({ isLoggedIn }) => (
   <>
     <Navbar />
@@ -77,7 +38,6 @@ const BuyerLayout = ({ isLoggedIn }) => (
       <Route path='/products/:id' element={<ProductDetail />} />
       <Route path='/login' element={!isLoggedIn ? <Login /> : <Navigate to='/' replace />} />
       <Route path='/signup' element={!isLoggedIn ? <Signup /> : <Navigate to='/' replace />} />
-      <Route path='/auth-success' element={<AuthSuccess />} />
       <Route element={<ProtectedRoute />}>
         <Route path='/cart' element={<Cart />} />
         <Route path='/checkout' element={<Checkout />} />
@@ -90,7 +50,6 @@ const BuyerLayout = ({ isLoggedIn }) => (
   </>
 );
 
-// ✅ Admin Routes
 const AdminRoutes = () => (
   <Routes>
     <Route path='/' element={<AdminLayout />}>
@@ -108,10 +67,24 @@ const AdminRoutes = () => (
   </Routes>
 );
 
-// ✅ App — seller check mein loading guard lagao
 const App = () => {
   const dispatch = useDispatch();
   const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('swc_user');
+    const token = localStorage.getItem('token');
+    if (stored && token && !isLoggedIn) {
+      try {
+        dispatch(loginSuccess(JSON.parse(stored)));
+      } catch {
+        localStorage.removeItem('swc_user');
+        localStorage.removeItem('token');
+      }
+    }
+    setAuthReady(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -129,7 +102,14 @@ const App = () => {
     syncCart();
   }, [isLoggedIn, dispatch]);
 
-  // ✅ SELLER ho to sirf admin routes dikhao
+  if (!authReady) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin' />
+      </div>
+    );
+  }
+
   if (isLoggedIn && user?.role === 'SELLER') {
     return (
       <Routes>
@@ -139,7 +119,6 @@ const App = () => {
     );
   }
 
-  // ✅ Buyer ya guest
   return (
     <Routes>
       <Route path='/*' element={<BuyerLayout isLoggedIn={isLoggedIn} />} />
