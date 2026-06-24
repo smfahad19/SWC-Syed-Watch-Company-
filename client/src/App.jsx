@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setCart, clearCart } from './redux/slices/cartSlice';
-import { loginSuccess } from './redux/slices/authSlice';
 import api from './services/api';
 
 import Login from './pages/auth/Login';
@@ -24,10 +23,36 @@ import Carousel from './pages/admin/Carousel';
 import Users from './pages/admin/Users';
 import Analytics from './pages/admin/Analytics';
 import Reviews from './pages/admin/Reviews';
+import { loginSuccess } from './redux/slices/authSlice';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+
+const AuthSuccess = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (token) {
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      localStorage.setItem('token', token);
+      dispatch(loginSuccess({
+        id: decoded.id,
+        role: decoded.role,
+        token,
+      }));
+      navigate(decoded.role === 'SELLER' ? '/admin/dashboard' : '/');
+    } else {
+      navigate('/login');
+    }
+  }, []);
+
+  return <div className='min-h-screen flex items-center justify-center'>Loading...</div>;
+};
 
 const BuyerLayout = ({ isLoggedIn }) => (
   <>
@@ -38,6 +63,7 @@ const BuyerLayout = ({ isLoggedIn }) => (
       <Route path='/products/:id' element={<ProductDetail />} />
       <Route path='/login' element={!isLoggedIn ? <Login /> : <Navigate to='/' replace />} />
       <Route path='/signup' element={!isLoggedIn ? <Signup /> : <Navigate to='/' replace />} />
+      <Route path='/auth-success' element={<AuthSuccess />} />
       <Route element={<ProtectedRoute />}>
         <Route path='/cart' element={<Cart />} />
         <Route path='/checkout' element={<Checkout />} />
@@ -63,28 +89,13 @@ const AdminRoutes = () => (
       <Route path='analytics' element={<Analytics />} />
       <Route path='reviews' element={<Reviews />} />
     </Route>
-    <Route path='*' element={<Navigate to='/admin/dashboard' replace />} />
+    <Route path='*' element={<Navigate to='/' replace />} />
   </Routes>
 );
 
 const App = () => {
   const dispatch = useDispatch();
   const { isLoggedIn, user } = useSelector((state) => state.auth);
-  const [authReady, setAuthReady] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('swc_user');
-    const token = localStorage.getItem('token');
-    if (stored && token && !isLoggedIn) {
-      try {
-        dispatch(loginSuccess(JSON.parse(stored)));
-      } catch {
-        localStorage.removeItem('swc_user');
-        localStorage.removeItem('token');
-      }
-    }
-    setAuthReady(true);
-  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -96,19 +107,12 @@ const App = () => {
         const res = await api.get('/buyer/cart');
         dispatch(setCart(res.data.data));
       } catch {
-        console.log('Cart sync error');
+        console.log("error occured");
+        
       }
     };
     syncCart();
   }, [isLoggedIn, dispatch]);
-
-  if (!authReady) {
-    return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <div className='w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin' />
-      </div>
-    );
-  }
 
   if (isLoggedIn && user?.role === 'SELLER') {
     return (
