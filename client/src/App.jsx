@@ -29,6 +29,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+// ✅ AuthSuccess — token URL se lo, Redux mein daalo, phir navigate
 const AuthSuccess = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -38,22 +39,35 @@ const AuthSuccess = () => {
     const token = params.get('token');
 
     if (token) {
-      const decoded = JSON.parse(atob(token.split('.')[1]));
-      localStorage.setItem('token', token);
-      dispatch(loginSuccess({
-        id: decoded.id,
-        role: decoded.role,
-        token,
-      }));
-      navigate(decoded.role === 'SELLER' ? '/admin/dashboard' : '/');
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        // Pehle localStorage set karo
+        localStorage.setItem('token', token);
+        localStorage.setItem('swc_user', JSON.stringify({
+          id: decoded.id,
+          role: decoded.role,
+          token,
+        }));
+        // Phir dispatch
+        dispatch(loginSuccess({
+          id: decoded.id,
+          role: decoded.role,
+          token,
+        }));
+        // Navigate
+        navigate(decoded.role === 'SELLER' ? '/admin/dashboard' : '/', { replace: true });
+      } catch {
+        navigate('/login', { replace: true });
+      }
     } else {
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
   }, []);
 
-  return <div className='min-h-screen flex items-center justify-center'>Loading...</div>;
+  return <div className='min-h-screen flex items-center justify-center text-sm text-gray-500'>Redirecting...</div>;
 };
 
+// ✅ Buyer Layout
 const BuyerLayout = ({ isLoggedIn }) => (
   <>
     <Navbar />
@@ -76,6 +90,7 @@ const BuyerLayout = ({ isLoggedIn }) => (
   </>
 );
 
+// ✅ Admin Routes
 const AdminRoutes = () => (
   <Routes>
     <Route path='/' element={<AdminLayout />}>
@@ -89,10 +104,11 @@ const AdminRoutes = () => (
       <Route path='analytics' element={<Analytics />} />
       <Route path='reviews' element={<Reviews />} />
     </Route>
-    <Route path='*' element={<Navigate to='/' replace />} />
+    <Route path='*' element={<Navigate to='/admin/dashboard' replace />} />
   </Routes>
 );
 
+// ✅ App — seller check mein loading guard lagao
 const App = () => {
   const dispatch = useDispatch();
   const { isLoggedIn, user } = useSelector((state) => state.auth);
@@ -107,13 +123,13 @@ const App = () => {
         const res = await api.get('/buyer/cart');
         dispatch(setCart(res.data.data));
       } catch {
-        console.log("error occured");
-        
+        console.log('Cart sync error');
       }
     };
     syncCart();
   }, [isLoggedIn, dispatch]);
 
+  // ✅ SELLER ho to sirf admin routes dikhao
   if (isLoggedIn && user?.role === 'SELLER') {
     return (
       <Routes>
@@ -123,6 +139,7 @@ const App = () => {
     );
   }
 
+  // ✅ Buyer ya guest
   return (
     <Routes>
       <Route path='/*' element={<BuyerLayout isLoggedIn={isLoggedIn} />} />

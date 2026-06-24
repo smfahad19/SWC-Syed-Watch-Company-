@@ -1,8 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-const userFromStorage = localStorage.getItem('swc_user')
-  ? JSON.parse(localStorage.getItem('swc_user'))
-  : null
+const userFromStorage = (() => {
+  try {
+    const user = localStorage.getItem('swc_user')
+    return user ? JSON.parse(user) : null
+  } catch {
+    return null
+  }
+})()
 
 const initialState = {
   user: userFromStorage,
@@ -24,7 +29,9 @@ const authSlice = createSlice({
       state.user = action.payload
       state.isLoggedIn = true
       localStorage.setItem('swc_user', JSON.stringify(action.payload))
-      localStorage.setItem('token', action.payload.token)
+      if (action.payload.token) {
+        localStorage.setItem('token', action.payload.token)
+      }
     },
     loginFail: (state, action) => {
       state.loading = false

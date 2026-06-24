@@ -50,7 +50,6 @@ export const googleLogin = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // ✅ token response me bhi bhejo
     res.status(200).json(
       new ApiResponse(200, 'Google login successful', {
         id: user.id,
